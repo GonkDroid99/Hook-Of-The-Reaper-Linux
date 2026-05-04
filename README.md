@@ -3,7 +3,9 @@
 # Hook-Of-The-Reaper
 ![HookOfTheReaperLogo330](https://github.com/user-attachments/assets/ff4479bc-adf3-4b0f-8dfb-0a8755b2ad6b)
 
+# ***** Sick, and Slow Reponses *****
 
+I have been not feeling the best for the last couple of weeks. Sadly, this will continue for all of May and the beginning of June. This is normal, and no health scare is going on. Please note that my response(s) are going to be slow, like 1-7 days slow. I am still working on HOTR and LED Hook: Strip, and should release some what soon. When I get better, I will remove this message, some time at the beginning of June. 
 
 # Quick Links
 
