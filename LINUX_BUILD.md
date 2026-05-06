@@ -64,9 +64,9 @@ This requires `sudo` and makes the following system changes:
 
 Adds your user to the `uucp` group so serial ports (`/dev/ttyUSB*`, `/dev/ttyACM*`) are accessible without root. You must **log out and back in** (or run `newgrp uucp`) for this to take effect.
 
-### Step 2 — `option` driver for 3A-3H Retro Shooter 2
+### Step 2 — `option` driver for 3A-3H Retro Shooter 
 
-The Retro Shooter 2 (USB IDs `0483:5751`) has a non-compliant CDC ACM USB descriptor. Linux's standard `cdc_acm` driver rejects it, so the device never appears as a serial port.
+The Retro Shooters as a non-compliant CDC ACM USB descriptor. Linux's standard `cdc_acm` driver rejects it, so the device never appears as a serial port.
 
 The setup script configures the `option` driver (originally a GSM modem driver, but permissive enough to accept any USB serial device) to claim this device instead. It:
 - Creates `/etc/modules-load.d/hotr.conf` to load the `option` module at boot
@@ -94,6 +94,8 @@ The udev rules for the Retro Shooter guns also run `modprobe option` and re-regi
 Runs `udevadm control --reload-rules` and `udevadm trigger` so the new rules take effect immediately without a reboot.
 
 ### Step 5 — Copy data directory
+
+Required for the program to run but you can do this manually to whereever you would like. 
 
 Copies `data/` from the repo root to `build/data/` so the binary can find its configuration files, default light gun profiles, and sounds.
 
@@ -128,7 +130,7 @@ This downloads `linuxdeploy` and its Qt plugin automatically on first run, then 
 
 ### Option B — Docker build (glibc 2.35 / Ubuntu 22.04)
 
-For maximum compatibility with older systems, build inside a Docker container:
+r maximum compatibility with older systems, build inside a Docker container:
 
 ```bash
 bash make_appimage_docker.sh
@@ -152,6 +154,7 @@ The `data/` directory must be in the **same folder as the AppImage file**. On fi
 ---
 
 ## Configuration Files
+
 
 | Scenario | Config location |
 |----------|----------------|
@@ -183,6 +186,13 @@ To reset configuration, delete or clear the relevant `data/` directory. HOTR wil
 **AppImage fails with `xcb` platform error**
 - This should be handled automatically by the AppRun script. If it still occurs: `export QT_QPA_PLATFORM=xcb` before running
 
-**No sound**
-- Ensure PulseAudio or PipeWire is running
-- The AppImage bundles Qt Multimedia but not audio backends — the host system must provide them
+
+
+
+## Bugs, issues and help
+
+If you find any bugs, issues or need help with anything feel free to reach out. 
+
+Raise a github issue or post something on the discussions. 
+
+I will try to get back to you when I can but this is hobby project so don't expect around the clock support, resolutions etc. 
