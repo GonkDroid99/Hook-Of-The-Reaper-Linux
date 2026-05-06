@@ -1,5 +1,12 @@
 
 
+
+
+
+# See LINUX_BUILD.MD For Linux instructions/setup
+
+
+
 # Hook-Of-The-Reaper
 ![HookOfTheReaperLogo330](https://github.com/user-attachments/assets/ff4479bc-adf3-4b0f-8dfb-0a8755b2ad6b)
 
