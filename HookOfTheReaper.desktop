@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Hook of the Reaper
+Comment=Light gun controller for MAME and emulators
+Exec=HookOfTheReaper
+Icon=HookOfTheReaper
+Type=Application
+Categories=Game;

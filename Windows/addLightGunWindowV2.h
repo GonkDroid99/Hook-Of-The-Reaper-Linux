@@ -9,12 +9,12 @@
 #include <QUrl>
 #include <QLCDNumber>
 #include <QThread>
+#include <QComboBox>
 
 
 #include "../COMDeviceList/ComDeviceList.h"
 
-#include <Windows.h>
-#include "hidapi_winapi.h"
+#include <hidapi.h>
 
 
 
@@ -86,6 +86,9 @@ private:
 
     //Fill Out Serial Port Info on Right Side of Window
     void FillSerialPortInfo(quint8 index);
+
+    //Populate a combo box with available serial ports (label + device path as data)
+    void FillPortComboBox(QComboBox *box);
 
     //Enable or Disable Combo Boxes if a Default Light Gun is Selected
     void SetEnableComboBoxes(bool enableCB);

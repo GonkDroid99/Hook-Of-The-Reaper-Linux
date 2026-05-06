@@ -20,6 +20,10 @@ ALEDStripLC::ALEDStripLC(quint8 cntlrNum, quint8 comNum, QString comNm, SerialPo
     rndFlashCount = 0;
     sequentialCount = 0;
 
+#ifndef Q_OS_WIN
+    p_comPort = nullptr;
+#endif
+
     //Open COM Port
     isCOMPortOpen = ConnectCOMPort();
 
@@ -50,7 +54,7 @@ ALEDStripLC::~ALEDStripLC()
 
 bool ALEDStripLC::ConnectCOMPort()
 {
-
+#ifdef Q_OS_WIN
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     std::wstring portName = comPath.toStdWString ();
     comPortLPC = portName.c_str ();
@@ -110,13 +114,6 @@ bool ALEDStripLC::ConnectCOMPort()
         return false;
     }
 
-    //Set Time Outs
-    //comPortTO.ReadIntervalTimeout = 15;
-    //comPortTO.ReadTotalTimeoutConstant = 15;
-    //comPortTO.ReadTotalTimeoutMultiplier = 5;
-    //comPortTO.WriteTotalTimeoutConstant = 15;
-    //comPortTO.WriteTotalTimeoutMultiplier = 2;
-
     comPortTO.ReadIntervalTimeout = MAXDWORD;
     comPortTO.ReadTotalTimeoutConstant = 0;
     comPortTO.ReadTotalTimeoutMultiplier = 0;
@@ -138,10 +135,32 @@ bool ALEDStripLC::ConnectCOMPort()
     }
 
     return true;
+
+#else
+    // Linux: use Qt's cross-platform QSerialPort
+    p_comPort = new QSerialPort(comName);
+    p_comPort->setBaudRate(QSerialPort::Baud115200);
+    p_comPort->setDataBits(QSerialPort::Data8);
+    p_comPort->setStopBits(QSerialPort::OneStop);
+    p_comPort->setParity(QSerialPort::NoParity);
+    p_comPort->setFlowControl(QSerialPort::NoFlowControl);
+
+    if (!p_comPort->open(QIODevice::ReadWrite))
+    {
+        QString critMessage = "Can not open the Serial COM Port: "+comName+". Error: "+p_comPort->errorString();
+        emit ShowErrorMessage("ALED Strip Serial COM Port Error", critMessage);
+        delete p_comPort;
+        p_comPort = nullptr;
+        return false;
+    }
+
+    return true;
+#endif
 }
 
 bool ALEDStripLC::ReconnectCOMPort()
 {
+#ifdef Q_OS_WIN
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     std::wstring portName = comPath.toStdWString ();
     comPortLPC = portName.c_str ();
@@ -162,7 +181,6 @@ bool ALEDStripLC::ReconnectCOMPort()
     DCB dcbSerialParam = comPortDCB;
     dcbSerialParam.DCBlength = sizeof(dcbSerialParam);
 
-    //Set the Params to the Serial Port, and fail handling
     if (!SetCommState(comPort, &dcbSerialParam))
     {
         COMSTAT status;
@@ -177,11 +195,7 @@ bool ALEDStripLC::ReconnectCOMPort()
         return false;
     }
 
-
-    //Set the Times Out for the Serial COM Port
-
     COMMTIMEOUTS timeout = comPortTO;
-    //Set the Timeouts to the Serial Port, and fail handling
     if (!SetCommTimeouts(comPort, &timeout))
     {
         COMSTAT status;
@@ -191,22 +205,42 @@ bool ALEDStripLC::ReconnectCOMPort()
         ClearCommError(comPort, &errors, &status);
 
         QString critMessage;
-
         critMessage = "Serial COM Port failed to set TimeOuts, on COM Port: "+comName+". Please check you Serial COM Port connections.\nError: "+QString::number(errors)+"\nLast error: "+QString::number(lastError);
         emit ShowErrorMessage("Serial COM Port Error",critMessage);
         return false;
     }
 
     isCOMPortOpen = true;
-
     return true;
+
+#else
+    // Linux: close and reopen the QSerialPort
+    if(p_comPort)
+    {
+        p_comPort->close();
+        delete p_comPort;
+        p_comPort = nullptr;
+    }
+
+    isCOMPortOpen = ConnectCOMPort();
+    return isCOMPortOpen;
+#endif
 }
 
 void ALEDStripLC::CloseCOMPort()
 {
     if(isCOMPortOpen == true)
     {
+#ifdef Q_OS_WIN
         CloseHandle(comPort);
+#else
+        if(p_comPort)
+        {
+            p_comPort->close();
+            delete p_comPort;
+            p_comPort = nullptr;
+        }
+#endif
         isCOMPortOpen = false;
     }
 }
@@ -217,6 +251,7 @@ bool ALEDStripLC::COMWrite(QByteArray writeData)
 {
     if(isCOMPortOpen == true)
     {
+#ifdef Q_OS_WIN
         quint32 size = writeData.size ();
         char* charArray = new char[size + 1];
         std::memcpy(charArray, writeData.constData (), size);
@@ -228,17 +263,12 @@ bool ALEDStripLC::COMWrite(QByteArray writeData)
         DWORD errors;
         bool didReconnect = true;
 
-        //QString string = QString::fromUtf8(writeData);
-        //qDebug() << "Writing to ALED Strip:" << string;
-
         writeOutput = WriteFile(comPort, charArray, size, &dwWrite, NULL);
 
         //If Failed Write, Check if COM Port is Still Open
         if(!writeOutput)
         {
             DWORD lastError = GetLastError();
-
-            //qDebug() << "Last Error" << lastError;
 
             if(lastError == ERROR_GEN_FAILURE || lastError == ERROR_OPERATION_ABORTED || lastError == ERROR_NO_SUCH_DEVICE || lastError == ERROR_BAD_COMMAND)
             {
@@ -252,8 +282,6 @@ bool ALEDStripLC::COMWrite(QByteArray writeData)
 
                     didReconnect = ReconnectCOMPort();
 
-                    //qDebug() << "COM Port Reconnect is" << didReconnect;
-
                     SetUpALEDStrips();
                 }
             }
@@ -262,13 +290,9 @@ bool ALEDStripLC::COMWrite(QByteArray writeData)
         //If Failed Write, then Retry
         while(!writeOutput && retry != WRITERETRYATTEMPTS && didReconnect)
         {
-            //Clean Out Error & Set dwWrite back to 0
             ClearCommError(comPort, &errors, &status);
             dwWrite = 0;
-
-            //Retry Write Again
             writeOutput = WriteFile(comPort, charArray, size, &dwWrite, NULL);
-
             retry++;
         }
 
@@ -282,7 +306,6 @@ bool ALEDStripLC::COMWrite(QByteArray writeData)
             emit ShowErrorMessage("ALED Strip Serial COM Port Error",critMessage);
             return false;
         }
-        //If Write Failed
         else if (!writeOutput)
         {
             ClearCommError(comPort, &errors, &status);
@@ -291,7 +314,6 @@ bool ALEDStripLC::COMWrite(QByteArray writeData)
             emit ShowErrorMessage("ALED Strip Serial COM Port Error",critMessage);
             return false;
         }
-        //If Size Doesn't Match Byte Written
         else if(dwWrite < size)
         {
             ClearCommError(comPort, &errors, &status);
@@ -302,6 +324,38 @@ bool ALEDStripLC::COMWrite(QByteArray writeData)
         }
 
         return true;
+
+#else
+        // Linux: use QSerialPort
+        qint64 bytesWritten = p_comPort->write(writeData);
+
+        if(bytesWritten == -1 || !p_comPort->waitForBytesWritten(COMPORTWAITFORWRITE))
+        {
+            // Port may have disconnected — try to reconnect
+            p_comPort->close();
+            isCOMPortOpen = false;
+
+            if(ReconnectCOMPort())
+            {
+                SetUpALEDStrips();
+                bytesWritten = p_comPort->write(writeData);
+                if(bytesWritten == -1 || !p_comPort->waitForBytesWritten(COMPORTWAITFORWRITE))
+                {
+                    QString critMessage = "Serial COM Port write failed on Port: "+comName+". Error: "+p_comPort->errorString();
+                    emit ShowErrorMessage("ALED Strip Serial COM Port Error", critMessage);
+                    return false;
+                }
+            }
+            else
+            {
+                QString critMessage = "Tried to Reconnect to "+comName+", but failed. Please check your Serial COM Port connections.";
+                emit ShowErrorMessage("ALED Strip Serial COM Port Error", critMessage);
+                return false;
+            }
+        }
+
+        return true;
+#endif
     }
 
     return false;
@@ -316,6 +370,7 @@ QString ALEDStripLC::COMRead(bool *didRead)
 
     if(isCOMPortOpen == true)
     {
+#ifdef Q_OS_WIN
         char readBuffer[65];
         DWORD bytesRead = 0;
         bool success;
@@ -323,14 +378,13 @@ QString ALEDStripLC::COMRead(bool *didRead)
         DWORD errors;
 
         success = ReadFile(
-            comPort,           // The serial port handle
-            readBuffer,      // The buffer to receive data
-            sizeof(readBuffer) - 1, // Maximum number of bytes to read
-            &bytesRead,      // Number of bytes actually read
-            NULL             // Use NULL for non-overlapped I/O
+            comPort,
+            readBuffer,
+            sizeof(readBuffer) - 1,
+            &bytesRead,
+            NULL
             );
 
-        //If Write Failed
         if (!success)
         {
             ClearCommError(comPort, &errors, &status);
@@ -340,9 +394,6 @@ QString ALEDStripLC::COMRead(bool *didRead)
             *didRead = false;
             return readData;
         }
-
-        //qDebug() << "Read Data:" << readData;
-        //qDebug() << "Bytes Read:" << bytesRead;
 
         if (bytesRead > 0)
         {
@@ -356,6 +407,23 @@ QString ALEDStripLC::COMRead(bool *didRead)
             *didRead = false;
             return readData;
         }
+
+#else
+        // Linux: non-blocking read — return immediately if no data
+        if(p_comPort->waitForReadyRead(50))
+        {
+            QByteArray data = p_comPort->readAll();
+            if(!data.isEmpty())
+            {
+                readData = QString::fromUtf8(data);
+                *didRead = true;
+                return readData;
+            }
+        }
+
+        *didRead = false;
+        return readData;
+#endif
     }
     *didRead = false;
     return readData;

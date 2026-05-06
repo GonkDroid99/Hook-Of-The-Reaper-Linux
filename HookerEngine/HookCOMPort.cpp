@@ -5,10 +5,11 @@
 HookCOMPort::HookCOMPort(QObject *parent)
     : QObject{parent}
 {
-    //qDebug() << "HookCOMPort Started";
+    qDebug() << "HookCOMPort Started";
 
     numPortOpen = 0;
     isPortOpen = false;
+    bypassConnectFailWarning = false;
 
     for(quint8 i = 0; i < MAXCOMPORTS; i++)
     {
@@ -16,7 +17,18 @@ HookCOMPort::HookCOMPort(QObject *parent)
         comPortOpen[i] = false;
     }
 
+    //Init USB HID
+    if (hid_init())
+    {
+        QString critMessage = "The USB HID Init failed.";
+        emit ErrorMessage("USB HID Init Failed", critMessage);
+    }
 
+    for(quint8 i = 0; i < MAXGAMEPLAYERS; i++)
+    {
+        p_hidConnection[i] = nullptr;
+        hidOpen[i] = false;
+    }
 }
 
 //Deconstructor
@@ -31,15 +43,26 @@ HookCOMPort::~HookCOMPort()
         if(p_ComPortArray[i] != nullptr)
             delete p_ComPortArray[i];
     }
+
+    //Close all USB HID connections
+    for(quint8 i = 0; i < MAXGAMEPLAYERS; i++)
+    {
+        if(hidOpen[i])
+            hid_close(p_hidConnection[i]);
+    }
+
+    hid_exit();
 }
 
 
 //public slots
 
-void HookCOMPort::Connect(const quint8 &comPortNum, const QString &comPortName, const qint32 &comPortBaud, const quint8 &comPortData, const quint8 &comPortParity, const quint8 &comPortStop, const quint8 &comPortFlow, const bool &isWriteOnly)
+void HookCOMPort::Connect(const quint8 &playerNum, const quint8 &comPortNum, const QString &comPortName, const qint32 &comPortBaud, const quint8 &comPortData, const quint8 &comPortParity, const quint8 &comPortStop, const quint8 &comPortFlow, const QString &comPortPath, const bool &isWriteOnly)
 {
+    Q_UNUSED(playerNum)
+    Q_UNUSED(comPortPath)
 
-    //qDebug() << "Creating a New Serial Com Port at: " << comPortNum << " With the name of: " << comPortName;
+    qDebug() << "Creating a New Serial Com Port at: " << comPortNum << " With the name of: " << comPortName;
 
     //Check if it is Already Open, if so, do nothing
     if(comPortOpen[comPortNum] == false)
@@ -89,13 +112,15 @@ void HookCOMPort::Connect(const quint8 &comPortNum, const QString &comPortName, 
         }
 
     }
-    //qDebug() << "Done with Connecting Port";
-    //qDebug() << "comPortOpen[comPortNum]: " << comPortOpen[comPortNum] << " comPortNum: " << comPortNum << " comPortName: " << comPortName;
+    qDebug() << "Done with Connecting Port";
+    qDebug() << "comPortOpen[comPortNum]: " << comPortOpen[comPortNum] << " comPortNum: " << comPortNum << " comPortName: " << comPortName;
 
 }
 
-void HookCOMPort::Disconnect(const quint8 &comPortNum)
+void HookCOMPort::Disconnect(const quint8 &playerNum, const quint8 &comPortNum)
 {
+    Q_UNUSED(playerNum)
+
     //qDebug() << "comPortOpen[comPortNum]: " << comPortOpen[comPortNum] << " comPortNum: " << comPortNum;
 
     if(comPortOpen[comPortNum])
@@ -206,6 +231,82 @@ void HookCOMPort::DisconnectAll()
             }
         }
         isPortOpen = false;
+    }
+
+    //Close all USB HID connections
+    for(quint8 i = 0; i < MAXGAMEPLAYERS; i++)
+    {
+        if(hidOpen[i])
+        {
+            hid_close(p_hidConnection[i]);
+            hidOpen[i] = false;
+        }
+    }
+}
+
+
+void HookCOMPort::ConnectHID(const quint8 &playerNum, const HIDInfo &lgHIDInfo)
+{
+    if(!hidOpen[playerNum])
+    {
+        QByteArray pathBA = lgHIDInfo.path.toUtf8();
+        char* pathPtr = pathBA.data();
+
+        p_hidConnection[playerNum] = hid_open_path(pathPtr);
+
+        if(!p_hidConnection[playerNum])
+        {
+            if(!bypassConnectFailWarning)
+            {
+                const wchar_t* errorWChar = hid_error(nullptr);
+                QString errorMSG = QString::fromWCharArray(errorWChar);
+                QString critMessage = "The USB HID failed to connect for player: "+QString::number(playerNum+1)+"\nError Message: "+errorMSG;
+                emit ErrorMessage("USB HID Failed to Open", critMessage);
+            }
+        }
+        else
+        {
+            hidOpen[playerNum] = true;
+            emit LightGunConnected(playerNum);
+        }
+    }
+}
+
+
+void HookCOMPort::DisconnectHID(const quint8 &playerNum)
+{
+    if(hidOpen[playerNum])
+    {
+        hid_close(p_hidConnection[playerNum]);
+        p_hidConnection[playerNum] = nullptr;
+        hidOpen[playerNum] = false;
+        emit LightGunDisconnected(playerNum);
+    }
+}
+
+
+void HookCOMPort::WriteDataHID(const quint8 &playerNum, const QByteArray &writeData)
+{
+    if(hidOpen[playerNum])
+    {
+        const unsigned char *constDataPtr = reinterpret_cast<const unsigned char*>(writeData.constData());
+        std::size_t size = writeData.size();
+        quint8 retry = 0;
+        qint16 bytesWritten = hid_write(p_hidConnection[playerNum], constDataPtr, size);
+
+        while(bytesWritten == -1 && retry != WRITERETRYATTEMPTS)
+        {
+            bytesWritten = hid_write(p_hidConnection[playerNum], constDataPtr, size);
+            retry++;
+        }
+
+        if(bytesWritten == -1)
+        {
+            const wchar_t* errorWChar = hid_error(p_hidConnection[playerNum]);
+            QString errorMSG = QString::fromWCharArray(errorWChar);
+            QString critMessage = "The USB HID failed to write data.\nError Message: "+errorMSG;
+            emit ErrorMessage("USB HID Write Failed", critMessage);
+        }
     }
 }
 

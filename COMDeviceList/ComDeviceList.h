@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QDir>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QApplication>
 
@@ -15,7 +16,7 @@
 #include <QSerialPortInfo>
 #include <QList>
 #include <QMap>
-#include <QlockFile>
+#include <QLockFile>
 
 #include "../Global.h"
 
@@ -74,6 +75,8 @@ public:
 
     //Copies Available COM Ports
     void            CopyAvailableComPortsArray(bool *targetArray, quint8 size);
+
+    QString         GetCurrentPath() { return currentPath; }
 
     //Get the Number of Certain Devices
     quint8          GetNumberLightGuns();

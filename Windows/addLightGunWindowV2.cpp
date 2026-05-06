@@ -1,6 +1,11 @@
 #include "addLightGunWindowV2.h"
 #include "Windows/ui_addLightGunWindowV2.h"
 #include "../Global.h"
+#ifndef Q_OS_WIN
+#include <QDir>
+#include <QFileInfo>
+#include <QComboBox>
+#endif
 
 addLightGunWindowV2::addLightGunWindowV2(ComDeviceList *cdList, QWidget *parent)
     : QDialog(parent)
@@ -46,6 +51,7 @@ addLightGunWindowV2::addLightGunWindowV2(ComDeviceList *cdList, QWidget *parent)
     ui->defaultLightGunComboBox->setCurrentIndex (0);
 
     //COM Port Combo Box - Adding Available COM Ports
+#ifdef Q_OS_WIN
     for(quint8 comPortIndx=0;comPortIndx<MAXCOMPORTS;comPortIndx++)
     {
         if(unusedComPort[comPortIndx])
@@ -54,6 +60,9 @@ addLightGunWindowV2::addLightGunWindowV2(ComDeviceList *cdList, QWidget *parent)
             tempQS = "";
         ui->comPortComboBox->insertItem(comPortIndx,tempQS);
     }
+#else
+    FillPortComboBox(ui->comPortComboBox);
+#endif
 
 
     //Baud Speed Combo Box - Adding in Speed Rates
@@ -339,13 +348,7 @@ void addLightGunWindowV2::on_defaultLightGunComboBox_currentIndexChanged(int ind
 
             ui->damageRadioButton->setEnabled(false);
             ui->damageJustLEDRadioButton->setEnabled(false);
-            ui->disableDamageradioButton->setEnabled(false);
-            ui->damageJustShakeRadioButton->setEnabled(false);
-
-            ui->deathRadioButton->setEnabled(false);
-            ui->deathJustLEDRadioButton->setEnabled(false);
-            ui->disableDeathradioButton->setEnabled(false);
-            ui->deathJustShakeRadioButton->setEnabled(false);
+            //RadioButton->setEnabled(false);
 
             ui->shakeRadioButton->setEnabled(false);
             ui->disableShakeradioButton->setEnabled(false);
@@ -511,6 +514,7 @@ void addLightGunWindowV2::on_addPushButton_clicked()
         AddLightGun();
 
         //Rebuild COM Port Combo Box, Now with the Used COM port Removed
+#ifdef Q_OS_WIN
         p_comDeviceList->CopyAvailableComPortsArray(unusedComPort, MAXCOMPORTS);
 
         //COM Port Combo Box
@@ -522,6 +526,10 @@ void addLightGunWindowV2::on_addPushButton_clicked()
                 tempQS = "";
             ui->comPortComboBox->setItemText (comPortIndx,tempQS);
         }
+#else
+        ui->comPortComboBox->clear();
+        FillPortComboBox(ui->comPortComboBox);
+#endif
 
         for(quint8 comPortIndx=0;comPortIndx<DIPSWITCH_NUMBER;comPortIndx++)
         {
@@ -924,7 +932,12 @@ void addLightGunWindowV2::AddLightGun()
     else if(!defaultLightGun || (defaultLightGun && defaultLightGunNum != ALIENUSB && defaultLightGunNum != CUSTOMUSB))
     {
         comPortNum = ui->comPortComboBox->currentIndex ();
+#ifdef Q_OS_WIN
         comPortName = BEGINCOMPORTNAME+QString::number(comPortNum);
+#else
+        comPortName = ui->comPortComboBox->currentData().toString();
+        if (comPortName.isEmpty()) comPortName = ui->comPortComboBox->currentText();
+#endif
     }
 
     if(!defaultLightGun || (defaultLightGun && (defaultLightGunNum != ALIENUSB || defaultLightGunNum != AIMTRAK || defaultLightGunNum != CUSTOMUSB)))
@@ -1286,12 +1299,36 @@ void addLightGunWindowV2::FindFlow()
     comPortFlow = FLOWDATA_ARRAY[indexTemp];
 }
 
+void addLightGunWindowV2::FillPortComboBox(QComboBox *box)
+{
+#ifndef Q_OS_WIN
+    int idx = 0;
+    for (const QSerialPortInfo &p : QSerialPortInfo::availablePorts())
+    {
+        if (idx >= MAXCOMPORTS) break;
+        QString desc = p.description();
+        QString label = desc.isEmpty() ? p.portName() : p.portName() + " — " + desc;
+        box->insertItem(idx++, label, QVariant("/dev/" + p.portName()));
+    }
+#else
+    Q_UNUSED(box)
+#endif
+}
+
+
 void addLightGunWindowV2::FillSerialPortInfo(quint8 index)
 {
     QString tempQS;
 
     //Get Serial Port Data
+#ifdef Q_OS_WIN
     tempQS = BEGINCOMPORTNAME+QString::number(index);
+#else
+    tempQS = ui->comPortComboBox->itemData(index).toString();
+    if (tempQS.isEmpty()) tempQS = ui->comPortComboBox->itemText(index);
+    // QSerialPortInfo expects the port name (e.g. "ttyUSB0"), not the full path
+    tempQS = tempQS.section('/', -1);
+#endif
     p_comPortInfo = new QSerialPortInfo(tempQS);
 
     //Clear Out Old Data

@@ -10,8 +10,7 @@
 
 #include "../COMDeviceList/ComDeviceList.h"
 
-#include <Windows.h>
-#include "hidapi_winapi.h"
+#include <hidapi.h>
 
 namespace Ui {
 class testComPortWindow;

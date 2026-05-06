@@ -36,7 +36,9 @@
 #include "HookerEngine/HookerEngine.h"
 
 //Windows Include File
+#ifdef Q_OS_WIN
 #include <Windows.h>
+#endif
 
 
 
@@ -152,11 +154,8 @@ signals:
     //Stops the Hooker Engine
     void StopHookerEngine();
 
-#ifdef Q_OS_WIN
-    //Hide From Taskbar when Minimized
 protected:
     void changeEvent(QEvent *event) override;
-#endif
 
 // HookerEngine and ComDeviceList need to be public
 public:

@@ -20,7 +20,11 @@
 #include "../Global.h"
 
 //Need Windows for the Serial Port COM
+#ifdef Q_OS_WIN
 #include <Windows.h>
+#else
+#include <QSerialPort>
+#endif
 
 // Serial Port Commands
 
@@ -149,18 +153,20 @@ signals:
 
 private:
 
-    //Pointer Array of Serial COM Ports
+#ifdef Q_OS_WIN
+    //Windows COM Port Handle and Configuration
     HANDLE                          comPort;
-
-    //COM Port Data
     DCB                             comPortDCB = {0};
     COMMTIMEOUTS                    comPortTO = {0};
-
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     LPCWSTR                         comPortLPC;
     LPCWSTR                         comPortJustLPC;
 #else
     LPCSTR                          comPortLPC;
+#endif
+#else
+    //Linux: use Qt cross-platform serial port
+    QSerialPort                     *p_comPort;
 #endif
 
     bool                            isCOMPortOpen;

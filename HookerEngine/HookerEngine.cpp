@@ -1,6 +1,13 @@
 #include "HookerEngine.h"
 #include "../Global.h"
 
+// Platform-agnostic accessor for the COM port handler
+#ifdef Q_OS_WIN
+#define p_comPortHandler p_hookComPortWin
+#else
+#define p_comPortHandler p_hookComPort
+#endif
+
 //Constructor
 HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiConnect, QObject *parent)
    : QObject{parent}
@@ -74,7 +81,19 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
 
     //Start of Directory and Path Checking. If Directory Doesn't Exists, It will Make it
     //currentPath = QDir::currentPath();
+#ifndef Q_OS_WIN
+    {
+        QByteArray appImageEnv = qgetenv("APPIMAGE");
+        if (!appImageEnv.isEmpty())
+            currentPath = QFileInfo(QString::fromUtf8(appImageEnv)).absolutePath();
+        else
+            currentPath = QApplication::applicationDirPath();
+        if (!QFileInfo(currentPath).isWritable())
+            currentPath = QDir::homePath() + "/.HookOfTheReaper";
+    }
+#else
     currentPath = QApplication::applicationDirPath();
+#endif
 
     //INI Stuff
     iniMAMEPathDir.setPath (currentPath);
@@ -277,15 +296,18 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
     connect(p_hookComPort, &HookCOMPort::ErrorMessage, this, &HookerEngine::ErrorMessageCom);
 
     //Connect the Signals & Slots for USB HID
-    connect(this, &HookerEngine::StartUSBHID, p_hookComPortWin, &HookCOMPortWin::ConnectHID);
-    connect(this, &HookerEngine::StopUSBHID, p_hookComPortWin, &HookCOMPortWin::DisconnectHID);
-    connect(this, &HookerEngine::WriteUSBHID, p_hookComPortWin, &HookCOMPortWin::WriteDataHID);
+    connect(this, &HookerEngine::StartUSBHID, p_hookComPort, &HookCOMPort::ConnectHID);
+    connect(this, &HookerEngine::StopUSBHID, p_hookComPort, &HookCOMPort::DisconnectHID);
+    connect(this, &HookerEngine::WriteUSBHID, p_hookComPort, &HookCOMPort::WriteDataHID);
 
-    //Connect the Signals & Slots for TCP Server
-    connect(this, &HookerEngine::ConnectTCPServer, p_hookComPortWin, &HookCOMPortWin::ConnectTCP);
-    connect(this, &HookerEngine::DisconnectTCPServer, p_hookComPortWin, &HookCOMPortWin::DisconnectTCP);
-    connect(this, &HookerEngine::WriteTCPServer, p_hookComPortWin, &HookCOMPortWin::WriteTCP);
+    connect(this, &HookerEngine::SetComPortBypassWriteChecks, p_hookComPort, &HookCOMPort::SetBypassSerialWriteChecks);
+    connect(this, &HookerEngine::SetBypassComPortConnectFailWarning, p_hookComPort, &HookCOMPort::SetBypassCOMPortConnectFailWarning);
 
+    //Light Gun Connected/Disconnected events
+    connect(p_hookComPort, &HookCOMPort::LightGunConnected, this, &HookerEngine::ConnectedLightGun);
+    connect(p_hookComPort, &HookCOMPort::LightGunDisconnected, this, &HookerEngine::DisconnectedLightGun);
+
+    //TCP Server (Sinden) not yet supported on Linux
 
 #endif
 
@@ -2131,7 +2153,7 @@ void HookerEngine::OpenSerialPortSlot(quint8 playerNum, bool noInit)
     do
     {
         QThread::msleep(1);
-        isLGConnected[playerNum] = p_hookComPortWin->IsCOMConnected(tempCPNum);
+        isLGConnected[playerNum] = p_comPortHandler->IsCOMConnected(tempCPNum);
         count++;
     } while(!isLGConnected[playerNum] && count < LGWAITTIME);
 
@@ -2236,7 +2258,7 @@ void HookerEngine::OpenUSBHIDSlot(quint8 playerNum, bool noInit)
     do
     {
         QThread::msleep(1);
-        isLGConnected[playerNum] = p_hookComPortWin->IsUSBHIDConnected(playerNum);
+        isLGConnected[playerNum] = p_comPortHandler->IsUSBHIDConnected(playerNum);
         count++;
     } while(!isLGConnected[playerNum] && count < LGWAITTIME);
 
@@ -2325,8 +2347,8 @@ void HookerEngine::OpenTCPServerSlot(quint8 playerNum, bool noInit)
     //Get Light Gun Number
     lightGun = loadedLGNumbers[playerNum];
 
-    isTCPConnected = p_hookComPortWin->IsTCPConnected (lgTCPPort[playerNum]);
-    isTCPConnecting = p_hookComPortWin->IsTCPConnecting (lgTCPPort[playerNum]);
+    isTCPConnected = p_comPortHandler->IsTCPConnected (lgTCPPort[playerNum]);
+    isTCPConnecting = p_comPortHandler->IsTCPConnecting (lgTCPPort[playerNum]);
 
     //qDebug() << "TCP Server Connecting for Player:" << playerNum << "Port:" << lgTCPPort[playerNum] << "isTCPConnected" << isTCPConnected << "isTCPConnecting" << isTCPConnecting;
 
@@ -2339,14 +2361,14 @@ void HookerEngine::OpenTCPServerSlot(quint8 playerNum, bool noInit)
             emit ConnectTCPServer(lgTCPPort[playerNum], 1);
     }
 
-    isTCPConnected = p_hookComPortWin->IsTCPConnected (lgTCPPort[playerNum]);
+    isTCPConnected = p_comPortHandler->IsTCPConnected (lgTCPPort[playerNum]);
 
     //Wait until connected, can take 1 seconds. Connecting started when loading DefaultLG game file
     // Waits for 7s, then fails after
     while(!isTCPConnected && sleepCount < TCPSLEEPCOUNT)
     {
         QThread::msleep(TCPSLEEPTIME);
-        isTCPConnected = p_hookComPortWin->IsTCPConnected (lgTCPPort[playerNum]);
+        isTCPConnected = p_comPortHandler->IsTCPConnected (lgTCPPort[playerNum]);
         sleepCount++;
         //qDebug() << "Waiting for TCP Server connected" << isTCPConnected;
     }
@@ -6076,7 +6098,7 @@ void HookerEngine::LoadLGFile()
     //Add mame_stop and States to outputSignalsStates
     //outputSignalsStates << PAUSE << ORIENTATION;
 
-    //qDebug() << "Output Signals & States String List:" << outputSignalsStates;
+    qDebug() << "[HOTR] Output signal filter:" << outputSignalsStates;
 
     //Tell TCP Socket a Game has Started
     emit TCPGameStart(outputSignalsStates);
@@ -6261,13 +6283,13 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
     quint8 charToNumber;
 
 
-    //qDebug() << "Signal: " << signalName << " Value: " << value;
+    qDebug() << "[HOTR] ProcessLGCommands:" << signalName << "=" << value;
 
     //Get the Player(s) & Command(s) From sinalsAndCommands QMap using signalName
     commands = signalsAndCommands[signalName];
     cmdCount = commands.length ();
 
-    //qDebug() << "Commnads: " << commands;
+    qDebug() << "[HOTR] ProcessLGCommands commands:" << commands;
 
     //First Command Is Always a Player
     if(commands[0] == ALLPLAYERS)
@@ -6394,6 +6416,7 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
 
                 //Check if light gun has an assign value, if not then don't run
                 //if(lightGun != UNASSIGN)
+                qDebug() << "[HOTR] isLGConnected[" << player << "]=" << isLGConnected[player] << "lightGun=" << lightGun;
                 if(isLGConnected[player])
                 {
                     //qDebug() << "Processing Command";

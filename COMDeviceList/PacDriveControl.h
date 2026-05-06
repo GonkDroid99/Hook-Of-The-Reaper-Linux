@@ -9,10 +9,12 @@
 
 #include "../Global.h"
 
-//Ultimarc SDK
+//Ultimarc SDK (Windows only)
+#ifdef Q_OS_WIN
 #include "StdAfx.h"
 #include "Windows.h"
 #include "PacDrive.h"
+#endif
 
 
 class PacDriveControl : public QObject

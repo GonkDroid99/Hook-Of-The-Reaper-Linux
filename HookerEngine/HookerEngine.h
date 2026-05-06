@@ -24,13 +24,14 @@
 
 #ifdef Q_OS_WIN
 #include "HookCOMPortWin.h"
-#else
-#include "HookCOMPort.h"
-#endif
-
-//For USB HID
+//For USB HID (Windows)
 #include <Windows.h>
 #include "hidapi_winapi.h"
+#else
+#include "HookCOMPort.h"
+//For USB HID (Linux/cross-platform)
+#include <hidapi.h>
+#endif
 
 #include "../COMDeviceList/ComDeviceList.h"
 
@@ -457,7 +458,7 @@ private:
     quint8                          lgPlayerOrder[MAXGAMEPLAYERS];
     //Player's Light Gun Assignment from the COM Device List.
     //Used for the 2 Things Above
-    quint8                          playersLGAssignment[MAXGAMEPLAYERS];
+    quint8                          playersLGAssignment[MAXPLAYERLIGHTGUNS];
     //Corresponding Light Gun List Number to the Player
     //list above. So you Know What Player has What Light
     //Gun, based on the Player's Light Gun Assignment Data

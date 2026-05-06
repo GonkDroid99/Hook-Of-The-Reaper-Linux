@@ -55,10 +55,32 @@ ComDeviceList::ComDeviceList(QObject *parent)
 
     //Get Current Path
     //currentPath = QDir::currentPath();
+#ifndef Q_OS_WIN
+    {
+        // When running from an AppImage, $APPIMAGE is the path to the .AppImage file.
+        // Prefer its containing directory so data/ lives next to the AppImage.
+        // Fall back to ~/.HookOfTheReaper if that directory isn't writable
+        // (e.g. read-only media, or AppImage run from a system path).
+        QByteArray appImageEnv = qgetenv("APPIMAGE");
+        if (!appImageEnv.isEmpty())
+            currentPath = QFileInfo(QString::fromUtf8(appImageEnv)).absolutePath();
+        else
+            currentPath = QApplication::applicationDirPath();
+
+        // Fall back to home dir if the primary path isn't writable
+        if (!QFileInfo(currentPath).isWritable())
+            currentPath = QDir::homePath() + "/.HookOfTheReaper";
+    }
+#else
     currentPath = QApplication::applicationDirPath();
+#endif
 
     //qDebug() << currentPath;
     currentPathDir.setPath (currentPath);
+
+    // Ensure the base directory exists (needed when using the home fallback)
+    if (!currentPathDir.exists())
+        currentPathDir.mkpath(".");
 
     //Check if data Directory Exsits
     dataDirExists = currentPathDir.exists (DATAFILEDIR);
@@ -82,20 +104,17 @@ ComDeviceList::ComDeviceList(QObject *parent)
     //Checks For INI Directory
     iniDirExists = currentPathDir.exists (INIFILEDIR);
 
-
     //If Not, then Make Directory
     if(!iniDirExists)
         canMKDIR = currentPathDir.mkdir (INIFILEDIR);
     else
         canMKDIR = true;
 
-    //qDebug() << "Current Path: " << currentPath;
-    //qDebug() << "iniDirExists: " << iniDirExists << " canMKDIR: " << canMKDIR;
-
     if(!canMKDIR)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not make the directory ini. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
-        return;
+        // Non-fatal: ini directory unavailable. MAME .ini game files won't load,
+        // but the app continues with DefaultLG files only.
+        qWarning() << "ComDeviceList: could not create ini directory at" << currentPath;
     }
 
     currentPathDir.setPath (currentPath+"/"+INIFILEDIR);
@@ -1764,10 +1783,7 @@ void ComDeviceList::LoadPlayersAss()
 
     //Check if the File Exists, as it might not be created yet. If no File, then exit out of member function
     if(loadPlayerAss.exists() == false)
-    {
-        QMessageBox::critical (nullptr, "File Error", "Can not open player assignment save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
         return;
-    }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     openFile = loadPlayerAss.open (QIODeviceBase::ReadOnly | QIODevice::Text);

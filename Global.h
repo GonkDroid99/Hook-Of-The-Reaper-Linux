@@ -19,12 +19,18 @@
 //Serial COM Port Data
 //Max Number of COM Ports
 #define MAXCOMPORTS             50
-#define BEGINCOMPORTNAME        "COM"
 #define COMPORTWAITFORWRITE     50
-#define COMPORTPATHFRONT        "\\\\.\\"
 
+#ifdef Q_OS_WIN
+#define BEGINCOMPORTNAME        "COM"
+#define COMPORTPATHFRONT        "\\\\.\\"
 //If USB Serial Port, is Read Only in Win32
 #define COMREADONLYWIN          true
+#else
+#define BEGINCOMPORTNAME        "ttyUSB"
+#define COMPORTPATHFRONT        "/dev/"
+#define COMREADONLYWIN          false
+#endif
 
 //Number of Different Settings
 #define BAUD_NUMBER             8
@@ -569,7 +575,7 @@ extern QString DEFAULTLGFILENAMES_ARRAY[];
 #define OPENCOMPORT2CHAR2       'p'
 #define CLOSECOMPORT            ">Close_COM"
 #define CLOSECOMPORTLENGTH      10
-#define CLOSECOMPORT2CHAR       "C"
+#define CLOSECOMPORT2CHAR       'C'
 #define DAMAGECMD               ">Damage"
 #define RECOILCMD               ">Recoil"
 #define RELOADCMD               ">Reload"
@@ -580,7 +586,7 @@ extern QString DEFAULTLGFILENAMES_ARRAY[];
 #define AUTOLEDCMD              ">Auto_LED"
 #define AUTOLEDCMD3CHAR         'u'
 #define ARATIO169CMD            ">AspectRatio_16:9"
-#define ARATIO169CMD13CHAR      "1"
+#define ARATIO169CMD13CHAR      '1'
 #define ARATIO43CMD             ">AspectRatio_4:3"
 #define JOYMODECMD              ">Joystick_Mode"
 #define KANDMMODECMD            ">Keyboard_Mouse_Mode"

@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+CLAUDE.md
+*.AppImage
+
+AppDir/
+build/
+build-release/

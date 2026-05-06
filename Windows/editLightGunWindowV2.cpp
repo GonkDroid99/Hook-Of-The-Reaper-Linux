@@ -1,6 +1,11 @@
 #include "editLightGunWindowV2.h"
 #include "Windows/ui_editLightGunWindowV2.h"
 #include "../Global.h"
+#ifndef Q_OS_WIN
+#include <QDir>
+#include <QFileInfo>
+#include <QComboBox>
+#endif
 
 editLightGunWindowV2::editLightGunWindowV2(ComDeviceList *cdList, QWidget *parent)
     : QDialog(parent)
@@ -27,6 +32,23 @@ editLightGunWindowV2::editLightGunWindowV2(ComDeviceList *cdList, QWidget *paren
 
     //Move Over the ComDevice List and Get a Copy of the Unused COM Ports & Used Dip Players
     p_comDeviceList = cdList;
+
+#ifndef Q_OS_WIN
+    // Helper: populate a combo box with by-path symlinks first (stable per USB port),
+    // then any remaining ttyUSBx/ttyACMx ports not already listed via by-path.
+    // Items store the actual device path as data; display text is a friendly label.
+    auto fillPortComboBox = [](QComboBox *box)
+    {
+        int idx = 0;
+        for (const QSerialPortInfo &p : QSerialPortInfo::availablePorts())
+        {
+            if (idx >= MAXCOMPORTS) break;
+            QString desc = p.description();
+            QString label = desc.isEmpty() ? p.portName() : p.portName() + " — " + desc;
+            box->insertItem(idx++, label, QVariant("/dev/" + p.portName()));
+        }
+    };
+#endif
     p_comDeviceList->CopyAvailableComPortsArray(unusedComPort, MAXCOMPORTS);
     p_comDeviceList->CopyUsedDipPlayersArray(usedDipPlayers, DIPSWITCH_NUMBER, 0);
 
@@ -44,11 +66,15 @@ editLightGunWindowV2::editLightGunWindowV2(ComDeviceList *cdList, QWidget *paren
 
 
     //Hub COM Port Combo Box - Adding All COM Ports
+#ifdef Q_OS_WIN
     for(quint8 comPortIndx=0;comPortIndx<MAXCOMPORTS;comPortIndx++)
     {
         tempQS = BEGINCOMPORTNAME+QString::number(comPortIndx);
         ui->hubComComboBox->insertItem(comPortIndx,tempQS);
     }
+#else
+    fillPortComboBox(ui->hubComComboBox);
+#endif
 
 
     //Load First Combo Box with the Saved Light Guns; Number, Name, and COM Port
@@ -266,6 +292,7 @@ editLightGunWindowV2::editLightGunWindowV2(ComDeviceList *cdList, QWidget *paren
     }
 
 
+#ifdef Q_OS_WIN
     for(quint8 comPortIndx=0;comPortIndx<MAXCOMPORTS;comPortIndx++)
     {
         if(unusedComPort[comPortIndx])
@@ -273,8 +300,10 @@ editLightGunWindowV2::editLightGunWindowV2(ComDeviceList *cdList, QWidget *paren
         else
             tempQS = "";
         ui->comPortComboBox->insertItem(comPortIndx,tempQS);
-
     }
+#else
+    fillPortComboBox(ui->comPortComboBox);
+#endif
 
     if(outputConnection == SERIALPORT && defaultLightGunNum != MX24)
     {
@@ -1409,7 +1438,12 @@ void editLightGunWindowV2::EditLightGun()
 
     if(comPortNum != UNASSIGN)
     {
+#ifdef Q_OS_WIN
         comPortName = BEGINCOMPORTNAME+QString::number(comPortNum);
+#else
+        comPortName = ui->comPortComboBox->currentData().toString();
+        if (comPortName.isEmpty()) comPortName = ui->comPortComboBox->currentText();
+#endif
         p_comPortInfo = new QSerialPortInfo(comPortName);
     }
 
@@ -1758,7 +1792,14 @@ void editLightGunWindowV2::FillSerialPortInfo(quint8 index)
     QString tempQS;
     QByteArray tempBA;
 
+#ifdef Q_OS_WIN
     tempQS = BEGINCOMPORTNAME+QString::number(index);
+#else
+    tempQS = ui->comPortComboBox->itemData(index).toString();
+    if (tempQS.isEmpty()) tempQS = ui->comPortComboBox->itemText(index);
+    // QSerialPortInfo expects the port name (e.g. "ttyUSB0"), not the full path
+    tempQS = tempQS.section('/', -1);
+#endif
     p_comPortInfo = new QSerialPortInfo(tempQS);
 
     ui->locationLlineEdit->clear ();

@@ -2,6 +2,8 @@
 #include <qdebug.h>
 
 
+#ifdef Q_OS_WIN
+
 PacDriveControl::PacDriveControl(QObject *parent)
     : QObject{parent}
 {
@@ -12,12 +14,7 @@ PacDriveControl::PacDriveControl(QObject *parent)
 
     //Collect Ultimarc Data
     CollectUltimarcData();
-
-    //Turn Off All Lights
-    //TurnOffAllLights();
-
 }
-
 
 
 PacDriveControl::~PacDriveControl()
@@ -27,13 +24,10 @@ PacDriveControl::~PacDriveControl()
 }
 
 
-
-
 void PacDriveControl::CollectUltimarcData()
 {
     if(numberUltimarcDevices > 0)
     {
-        //Varibles
         quint8 i, j;
         quint8 index = 0;
         PWCHAR buffer = new wchar_t[256];
@@ -47,51 +41,38 @@ void PacDriveControl::CollectUltimarcData()
 
             if(type >= PACDRIVE && type <= IPACULTIMATEIO)
             {
-
-                //2 IDs used, first is postition in list, Second is what is Programmed to
-                //The position in the list ID is the important one
                 dataUltimarc[i].id = i;
-
                 dataUltimarc[i].type = type;
-
                 dataUltimarc[i].typeName = ULTIMARCTYPENAME[dataUltimarc[i].type];
-
                 dataUltimarc[i].vendorID = PacGetVendorId(i);
                 dataUltimarc[i].productID = PacGetProductId(i);
-
                 dataUltimarc[i].vendorIDS = QString("0x%1").arg( dataUltimarc[i].vendorID, 4, 16, QChar('0')).toUpper();
                 dataUltimarc[i].productIDS = QString("0x%1").arg(dataUltimarc[i].productID, 4, 16, QChar('0')).toUpper();
-
                 dataUltimarc[i].version = PacGetVersionNumber(i);
                 dataUltimarc[i].versionS = QString::number(dataUltimarc[i].version);
 
                 PacGetVendorName(i, buffer);
                 dataUltimarc[i].vendorName = QString::fromWCharArray(buffer);
-
                 if(dataUltimarc[i].vendorName.size() > 255)
                     invalid = true;
 
                 PacGetProductName(i, buffer);
                 dataUltimarc[i].productName = QString::fromWCharArray(buffer);
-
                 if(dataUltimarc[i].productName.size() > 255)
                     invalid = true;
 
                 PacGetSerialNumber(i, buffer);
                 dataUltimarc[i].serialNumber = QString::fromWCharArray(buffer);
-
                 if(dataUltimarc[i].serialNumber.size() > 255)
                     invalid = true;
 
                 PacGetDevicePath(i, buffer);
                 dataUltimarc[i].devicePath = QString::fromWCharArray(buffer);
-
                 if(dataUltimarc[i].devicePath.size() > 255)
                     invalid = true;
 
                 dataUltimarc[i].groupFile = "";
 
-                //Get Light Controller ID
                 if(dataUltimarc[i].type == PACDRIVE)
                     dataUltimarc[i].deviceID = dataUltimarc[i].version;
                 else if(dataUltimarc[i].type == UHID)
@@ -110,22 +91,19 @@ void PacDriveControl::CollectUltimarcData()
                 if(dataUltimarc[i].deviceID > 7)
                     invalid = true;
 
-                //Get Number of Pins
-                numberPins.insert (i,ULTIMARCTYPELEDCOUNT[dataUltimarc[i].type]);
+                numberPins.insert(i, ULTIMARCTYPELEDCOUNT[dataUltimarc[i].type]);
 
-                //Set Pins State and Intensity to 0, for a Known State and Intensity
                 QList<bool> states;
                 QList<quint8> intensity;
 
                 for(j = 0; j < numberPins[i]; j++)
                 {
-                    //states << false;
                     states << true;
                     intensity << 0;
                 }
 
-                lightStateMap.insert(i,states);
-                lightIntensityMap.insert(i,intensity);
+                lightStateMap.insert(i, states);
+                lightIntensityMap.insert(i, intensity);
 
                 if(type == IPACULTIMATEIO)
                     numberGroups.insert(i, ULTIMATEGRPS);
@@ -159,7 +137,6 @@ void PacDriveControl::CollectUltimarcData()
         }
 
         delete[] buffer;
-
     }
 }
 
@@ -178,14 +155,12 @@ UltimarcData PacDriveControl::GetUltimarcData(quint8 index)
 
 void PacDriveControl::TurnOffAllLights()
 {
-    //Turn Off Lights and Set Intensity to 0
     if(numberUltimarcDevices > 0)
     {
         quint8 i, j, pins;
 
         for(i = 0; i < numberUltimarcDevices; i++)
         {
-
             if(dataUltimarc[i].type >= NANOLED && dataUltimarc[i].type <= IPACULTIMATEIO && dataUltimarc[i].valid)
             {
                 pins = numberPins[i];
@@ -195,7 +170,6 @@ void PacDriveControl::TurnOffAllLights()
                 for(j = 0; j < pins; j++)
                     intensityData[j] = 0;
 
-                //Turn States On
                 for(j = 0; j < numberGroups[i]; j++)
                 {
                     if(j == 7 && dataUltimarc[i].type == NANOLED)
@@ -204,19 +178,11 @@ void PacDriveControl::TurnOffAllLights()
                         Pac64SetLEDStates(dataUltimarc[i].id, j, 0xFF);
                 }
 
-                //qDebug() << "Turning Off the Lights";
-                //Turn Intensity to 0
-                Pac64SetLEDIntensities(dataUltimarc[i].id,intensityData);
+                Pac64SetLEDIntensities(dataUltimarc[i].id, intensityData);
 
                 delete[] intensityData;
             }
-            //else
-            //{
-            //    PacSetLEDStates(dataUltimarc[i].id,0);
-            //}
         }
-
-
     }
 }
 
@@ -233,7 +199,6 @@ quint8 PacDriveControl::GetIDFromDevicePath(QString devicePath)
         }
     }
 
-    //Cound't Find Device
     return 255;
 }
 
@@ -253,7 +218,6 @@ void PacDriveControl::TurnOffLights(quint8 id)
             for(i = 0; i < pins; i++)
                 intensityData[i] = 0;
 
-            //Turn States On
             for(i = 0; i < numberGroups[id]; i++)
             {
                 if(i == 7 && dataUltimarc[id].type == NANOLED)
@@ -262,14 +226,12 @@ void PacDriveControl::TurnOffLights(quint8 id)
                     Pac64SetLEDStates(id, i+1, 0xFF);
             }
 
-            //Turn Intensity for all Pins Off
-            Pac64SetLEDIntensities(id,intensityData);
+            Pac64SetLEDIntensities(id, intensityData);
 
             delete[] intensityData;
         }
         else if(dataUltimarc[id].type >= PACDRIVE && dataUltimarc[id].type <= BLUEHID)
         {
-            //Turn Off the 16 States
             PacSetLEDStates(id, 0);
 
             groupStateData[id][0] = 0;
@@ -298,7 +260,6 @@ bool PacDriveControl::CheckLoadedUltimarcDevice(UltimarcData dataU)
         }
     }
 
-    //Didn't Find Device
     return false;
 }
 
@@ -333,8 +294,6 @@ void PacDriveControl::SetStateINI(quint8 id, quint8 pin, bool state)
         {
             quint8 group = (pin >> 3);
             quint8 port = pin & 0x07;
-            //quint8 pinData = (1 << port);
-
             Pac64SetLEDState(id, group+1, port, state);
         }
     }
@@ -345,9 +304,7 @@ void PacDriveControl::SetIntensityINI(quint8 id, quint8 pin, quint8 intensity)
     if(id < numberUltimarcDevicesValid)
     {
         if(dataUltimarc[id].type >= NANOLED && dataUltimarc[id].type <= IPACULTIMATEIO)
-        {
             Pac64SetLEDIntensity(id, pin, intensity);
-        }
     }
 }
 
@@ -357,9 +314,7 @@ void PacDriveControl::SetFadeINI(quint8 id, quint8 fade)
     if(id < numberUltimarcDevicesValid)
     {
         if(dataUltimarc[id].type >= NANOLED && dataUltimarc[id].type <= IPACULTIMATEIO)
-        {
             Pac64SetLEDFadeTime(id, fade);
-        }
     }
 }
 
@@ -374,28 +329,22 @@ void PacDriveControl::KillLightsINI(quint8 id)
         {
             quint8 i, pins;
 
-            //Turn Off Intensity
             pins = numberPins[id];
             PBYTE intensityData = new BYTE[pins];
 
             for(i = 0; i < pins; i++)
                 intensityData[i] = 0;
 
-            //Turn Intensity for all Pins Off
-            Pac64SetLEDIntensities(id,intensityData);
+            Pac64SetLEDIntensities(id, intensityData);
 
-            //Delete Pointer Data
             delete[] intensityData;
 
-            //Turn On States
-            //Turn Off States
             Pac64SetLEDStates(id, 0, 0xFF);
         }
     }
 }
 
 // Public Slots
-
 
 void PacDriveControl::SetLightIntensity(quint8 id, quint8 pin, quint8 intensity)
 {
@@ -472,9 +421,7 @@ void PacDriveControl::SetLightIntensityGroup(quint8 id, QList<quint8> group, qui
         QString msg = "Invalid Ultimarc ID: "+QString::number(id)+". The ID is not found in the valid Ultimarc light controllers.";
         emit ShowErrorMessage(title, msg);
     }
-
 }
-
 
 
 void PacDriveControl::SetRGBLightIntensity(const quint8 &id, const RGBPins &pins, const RGBColor &color)
@@ -483,8 +430,6 @@ void PacDriveControl::SetRGBLightIntensity(const quint8 &id, const RGBPins &pins
     {
         bool writePass;
         quint8 writeCount = 0;
-
-        //qDebug() << "Setting RGB Intensity for ID:" << id << "Red pin" << pins.r;
 
         if(lightIntensityMap[id][pins.r] != color.r)
         {
@@ -495,21 +440,17 @@ void PacDriveControl::SetRGBLightIntensity(const quint8 &id, const RGBPins &pins
             } while(!writePass && writeCount < WRITERETRYATTEMPTS+1);
 
             if(writePass)
-            {
                 lightIntensityMap[id][pins.r] = color.r;
-            }
             else
             {
-                QString title = "Write to Ultimarc Light Controller Failed";
-                QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.";
-                emit ShowErrorMessage(title, msg);
+                emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+                    "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.");
             }
         }
 
         if(lightIntensityMap[id][pins.g] != color.g)
         {
             writeCount = 0;
-
             do
             {
                 writePass = Pac64SetLEDIntensity(id, pins.g, color.g);
@@ -517,21 +458,17 @@ void PacDriveControl::SetRGBLightIntensity(const quint8 &id, const RGBPins &pins
             } while(!writePass && writeCount < WRITERETRYATTEMPTS+1);
 
             if(writePass)
-            {
                 lightIntensityMap[id][pins.g] = color.g;
-            }
             else
             {
-                QString title = "Write to Ultimarc Light Controller Failed";
-                QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.";
-                emit ShowErrorMessage(title, msg);
+                emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+                    "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.");
             }
         }
 
         if(lightIntensityMap[id][pins.b] != color.b)
         {
             writeCount = 0;
-
             do
             {
                 writePass = Pac64SetLEDIntensity(id, pins.b, color.b);
@@ -539,25 +476,20 @@ void PacDriveControl::SetRGBLightIntensity(const quint8 &id, const RGBPins &pins
             } while(!writePass && writeCount < WRITERETRYATTEMPTS+1);
 
             if(writePass)
-            {
                 lightIntensityMap[id][pins.b] = color.b;
-            }
             else
             {
-                QString title = "Write to Ultimarc Light Controller Failed";
-                QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.";
-                emit ShowErrorMessage(title, msg);
+                emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+                    "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.");
             }
         }
     }
     else
     {
-        QString title = "Invalid Ultimarc Light Controller ID";
-        QString msg = "Invalid Ultimarc ID: "+QString::number(id)+". The ID is not found in the valid Ultimarc light controllers.";
-        emit ShowErrorMessage(title, msg);
+        emit ShowErrorMessage("Invalid Ultimarc Light Controller ID",
+            "Invalid Ultimarc ID: "+QString::number(id)+". The ID is not found in the valid Ultimarc light controllers.");
     }
 }
-
 
 
 void PacDriveControl::SetPinState(quint8 id, quint8 pin, bool state)
@@ -569,22 +501,15 @@ void PacDriveControl::SetPinState(quint8 id, quint8 pin, bool state)
         quint8 port = pin & 0x07;
         quint8 pinData = (1 << port);
         quint8 dataChk = groupStateData[id][group] & pinData;
-        //INT groupW = group + 1;
-        //INT portW = port;
-        //INT idW = id;
 
         if(dataChk == 0)
             stateChk = false;
         else
             stateChk = true;
 
-        //qDebug() << "stateChk" << stateChk << "State" << state << "dataChk" << dataChk;
-
         if(stateChk != state)
         {
             quint8 writeCount = 0;
-
-            //qDebug() << "pin" << pin << "group" << group << "port" << port;
 
             do
             {
@@ -598,15 +523,11 @@ void PacDriveControl::SetPinState(quint8 id, quint8 pin, bool state)
                     groupStateData[id][group] |= pinData;
                 else
                     groupStateData[id][group] &= ~(pinData);
-
-                //qDebug() << "groupStateData[id][group]" << groupStateData[id][group];
             }
             else
             {
-                //qDebug() << "Failed writePass" << writePass << "writeCount" << writeCount;
-                QString title = "Write to Ultimarc Light Controller Failed";
-                QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.";
-                emit ShowErrorMessage(title, msg);
+                emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+                    "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.");
             }
         }
     }
@@ -629,8 +550,6 @@ void PacDriveControl::SetPinStates(quint8 id, quint8 group, quint8 groupData, bo
 
         if(groupStateData[id][group] != groupData || all)
         {
-            //qDebug() << "useGroup" << useGroup << "data" << data << "groupStateData[id][group]" << groupStateData[id][group];
-
             do
             {
                 writePass = Pac64SetLEDStates(id, useGroup, data);
@@ -650,10 +569,8 @@ void PacDriveControl::SetPinStates(quint8 id, quint8 group, quint8 groupData, bo
             }
             else
             {
-                //qDebug() << "Failed writePass" << writePass << "writeCount" << writeCount;
-                QString title = "Write to Ultimarc Light Controller Failed";
-                QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts using Pac64SetLEDStates. Something is wrong with the hardware. Please check device and USB path.";
-                emit ShowErrorMessage(title, msg);
+                emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+                    "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts using Pac64SetLEDStates. Something is wrong with the hardware. Please check device and USB path.");
             }
         }
     }
@@ -683,15 +600,11 @@ void PacDriveControl::SetPACLEDStates(quint8 id, quint16 data)
             {
                 groupStateData[id][0] = low;
                 groupStateData[id][1] = high;
-
-                //qDebug() << "groupStateData[id][0]" << groupStateData[id][0] << "groupStateData[id][1]" << groupStateData[id][1];
             }
             else
             {
-                //qDebug() << "Failed writePass" << writePass << "writeCount" << writeCount;
-                QString title = "Write to Ultimarc Light Controller Failed";
-                QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.";
-                emit ShowErrorMessage(title, msg);
+                emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+                    "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.");
             }
         }
     }
@@ -707,7 +620,6 @@ void PacDriveControl::SetPACLEDState(quint8 id, quint8 pin, bool state)
         quint8 dataChk;
         quint8 group = 0;
 
-        //Check State Data
         if(pin > 7)
         {
             group = 1;
@@ -727,8 +639,6 @@ void PacDriveControl::SetPACLEDState(quint8 id, quint8 pin, bool state)
         {
             quint8 writeCount = 0;
 
-            //qDebug() << "pin" << pin << "group" << group << "port" << port;
-
             do
             {
                 writePass = PacSetLEDState(id, pin, state);
@@ -741,18 +651,13 @@ void PacDriveControl::SetPACLEDState(quint8 id, quint8 pin, bool state)
                     groupStateData[id][group] |= pinData;
                 else
                     groupStateData[id][group] &= ~(pinData);
-
-                //qDebug() << "groupStateData[id][group]" << groupStateData[id][group];
             }
             else
             {
-                //qDebug() << "Failed writePass" << writePass << "writeCount" << writeCount;
-                QString title = "Write to Ultimarc Light Controller Failed";
-                QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.";
-                emit ShowErrorMessage(title, msg);
+                emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+                    "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts. Something is wrong with the hardware. Please check device and USB path.");
             }
         }
-
     }
 }
 
@@ -770,20 +675,52 @@ void PacDriveControl::SetFade(quint8 id, quint8 fade)
 
     if(!writePass)
     {
-        //qDebug() << "Failed writePass" << writePass << "writeCount" << writeCount;
-        QString title = "Write to Ultimarc Light Controller Failed";
-        QString msg = "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts to the fade. Something is wrong with the hardware. Please check device and USB path.";
-        emit ShowErrorMessage(title, msg);
+        emit ShowErrorMessage("Write to Ultimarc Light Controller Failed",
+            "Write to Ultimarc light controller with ID: "+QString::number(id)+" failed after 3 write attampts to the fade. Something is wrong with the hardware. Please check device and USB path.");
     }
 }
 
 
+#else // Linux — Ultimarc PacDrive SDK is Windows-only; provide no-op stubs
 
+PacDriveControl::PacDriveControl(QObject *parent)
+    : QObject{parent}
+{
+    devicesInList = 0;
+    numberUltimarcDevices = 0;
+    numberUltimarcDevicesValid = 0;
+    noControllers = true;
+}
 
+PacDriveControl::~PacDriveControl() {}
 
+void PacDriveControl::CollectUltimarcData() {}
 
+UltimarcData PacDriveControl::GetUltimarcData(quint8 index)
+{
+    Q_UNUSED(index)
+    UltimarcData temp;
+    return temp;
+}
 
+void PacDriveControl::TurnOffAllLights() {}
+quint8 PacDriveControl::GetIDFromDevicePath(QString devicePath) { Q_UNUSED(devicePath) return 255; }
+void PacDriveControl::TurnOffLights(quint8 id) { Q_UNUSED(id) }
+bool PacDriveControl::CheckLoadedUltimarcDevice(UltimarcData dataU) { Q_UNUSED(dataU) return false; }
+void PacDriveControl::DeletedFromList(UltimarcData dataU) { Q_UNUSED(dataU) }
 
+void PacDriveControl::SetStateINI(quint8 id, quint8 pin, bool state) { Q_UNUSED(id) Q_UNUSED(pin) Q_UNUSED(state) }
+void PacDriveControl::SetIntensityINI(quint8 id, quint8 pin, quint8 intensity) { Q_UNUSED(id) Q_UNUSED(pin) Q_UNUSED(intensity) }
+void PacDriveControl::SetFadeINI(quint8 id, quint8 fade) { Q_UNUSED(id) Q_UNUSED(fade) }
+void PacDriveControl::KillLightsINI(quint8 id) { Q_UNUSED(id) }
 
+void PacDriveControl::SetLightIntensity(quint8 id, quint8 pin, quint8 intensity) { Q_UNUSED(id) Q_UNUSED(pin) Q_UNUSED(intensity) }
+void PacDriveControl::SetLightIntensityGroup(quint8 id, QList<quint8> group, quint8 intensity) { Q_UNUSED(id) Q_UNUSED(group) Q_UNUSED(intensity) }
+void PacDriveControl::SetRGBLightIntensity(const quint8 &id, const RGBPins &pins, const RGBColor &color) { Q_UNUSED(id) Q_UNUSED(pins) Q_UNUSED(color) }
+void PacDriveControl::SetPinState(quint8 id, quint8 pin, bool state) { Q_UNUSED(id) Q_UNUSED(pin) Q_UNUSED(state) }
+void PacDriveControl::SetPinStates(quint8 id, quint8 group, quint8 groupData, bool all) { Q_UNUSED(id) Q_UNUSED(group) Q_UNUSED(groupData) Q_UNUSED(all) }
+void PacDriveControl::SetPACLEDStates(quint8 id, quint16 data) { Q_UNUSED(id) Q_UNUSED(data) }
+void PacDriveControl::SetPACLEDState(quint8 id, quint8 pin, bool state) { Q_UNUSED(id) Q_UNUSED(pin) Q_UNUSED(state) }
+void PacDriveControl::SetFade(quint8 id, quint8 fade) { Q_UNUSED(id) Q_UNUSED(fade) }
 
-
+#endif // Q_OS_WIN

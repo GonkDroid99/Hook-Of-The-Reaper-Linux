@@ -1,0 +1,83 @@
+name: Build AppImage
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:   # allow manual trigger from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04   # glibc 2.35 — compatible with Batocera and most Linux distros
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-multimedia-dev \
+            libqt6serialport6-dev \
+            libhidapi-dev \
+            libusb-1.0-0-dev \
+            libudev-dev \
+            libpulse-dev \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libxcb1-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libfontconfig1-dev \
+            libfreetype-dev \
+            libfuse2 \
+            file
+
+      - name: Download linuxdeploy tools
+        run: |
+          wget -q -O linuxdeploy-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q -O linuxdeploy-plugin-qt-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc)
+
+      - name: Assemble AppDir
+        run: |
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/HookOfTheReaper AppDir/usr/bin/HookOfTheReaper
+          cp data/icons/hOTRIcon256.png AppDir/usr/share/icons/hicolor/256x256/apps/HookOfTheReaper.png
+          cp HookOfTheReaper.desktop AppDir/usr/share/applications/HookOfTheReaper.desktop
+
+      - name: Package AppImage
+        env:
+          QMAKE: /usr/bin/qmake6
+          OUTPUT: HookOfTheReaper-x86_64.AppImage
+        run: |
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --plugin qt \
+            --output appimage \
+            --desktop-file HookOfTheReaper.desktop \
+            --icon-file data/icons/hOTRIcon256.png
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HookOfTheReaper-x86_64
+          path: HookOfTheReaper-x86_64.AppImage
+
+      - name: Upload to release (on tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: HookOfTheReaper-x86_64.AppImage

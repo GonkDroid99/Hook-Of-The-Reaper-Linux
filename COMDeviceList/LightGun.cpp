@@ -1,7 +1,8 @@
 #include "LightGun.h"
 #include "../Global.h"
 
-#include "../../saeicmrterta.h"
+//#include "../../saeicmrterta.h"
+#define ARIEMCTORIRLK ""
 
 //Constructors
 

@@ -244,7 +244,7 @@ HookOfTheReaper::HookOfTheReaper(QWidget *parent)
 #else
 
     this->show();
-    this->setWindowState (Qt::WindowMinimized);
+    p_hookEngine->HOTRWindowState (false);
 
 #endif
 
@@ -889,21 +889,21 @@ void HookOfTheReaper::DisplayText()
 
 // Protective Member Functions
 
-#ifdef Q_OS_WIN
-
 void HookOfTheReaper::changeEvent(QEvent *event)
 {
     if (event->type() == QEvent::WindowStateChange) {
         if (windowState() & Qt::WindowMinimized) {
+#ifdef Q_OS_WIN
             hide();
             trayIcon->show ();
+#endif
             p_hookEngine->HOTRWindowState (true);
+        } else {
+            p_hookEngine->HOTRWindowState (false);
         }
-
     }
     QMainWindow::changeEvent(event);
 }
-#endif
 
 
 

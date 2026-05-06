@@ -87,7 +87,8 @@ void HookTCPSocket::TCPReadData()
 
         if(inGame)
         {
-            //qDebug() << "Socket Read After Game, signal:" << splitData[0] << "data:" << splitData[1];
+            qDebug() << "[HOTR] TCP in-game signal:" << splitData[0] << "=" << splitData[1]
+                     << "| inFilter:" << outputSignalsFilter.contains(splitData[0]);
 
             //Check if Light Guns and Light Controllers using Output Signal
             if(bothOutputSig)

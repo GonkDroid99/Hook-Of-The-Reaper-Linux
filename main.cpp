@@ -35,9 +35,22 @@ int main(int argc, char *argv[])
     //If Memory can Be Created, then no other HOTR Running
     //If false, then HOTR is Already Running
     if (sharedMemory.create(1))
-        isRunning = false;
-    else
+//     {
+         isRunning = false;
+//     }
+//     else
+//     {
+// #ifndef Q_OS_WIN
+//         // On Linux, a crash leaves the shared memory segment behind.
+//         // Attach and immediately detach to clean up the stale segment,
+//         // then try creating again — if it succeeds, nothing is actually running.
+//         sharedMemory.attach();
+//         sharedMemory.detach();
+//         isRunning = !sharedMemory.create(1);
+else
         isRunning = true;
+// #endif
+//     }
 
     //Release semaphore before program Starts or Closes
     semaphore.release();
