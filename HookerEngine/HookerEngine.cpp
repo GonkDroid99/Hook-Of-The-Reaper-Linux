@@ -6282,14 +6282,14 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
     bool dlgCMDFound;
     quint8 charToNumber;
 
-
-    qDebug() << "[HOTR] ProcessLGCommands:" << signalName << "=" << value;
+    
+   // qDebug() << "[HOTR] ProcessLGCommands:" << signalName << "=" << value;
 
     //Get the Player(s) & Command(s) From sinalsAndCommands QMap using signalName
     commands = signalsAndCommands[signalName];
     cmdCount = commands.length ();
 
-    qDebug() << "[HOTR] ProcessLGCommands commands:" << commands;
+   // qDebug() << "[HOTR] ProcessLGCommands commands:" << commands;
 
     //First Command Is Always a Player
     if(commands[0] == ALLPLAYERS)
@@ -6416,7 +6416,7 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
 
                 //Check if light gun has an assign value, if not then don't run
                 //if(lightGun != UNASSIGN)
-                qDebug() << "[HOTR] isLGConnected[" << player << "]=" << isLGConnected[player] << "lightGun=" << lightGun;
+                // qDebug() << "[HOTR] isLGConnected[" << player << "]=" << isLGConnected[player] << "lightGun=" << lightGun;
                 if(isLGConnected[player])
                 {
                     //qDebug() << "Processing Command";

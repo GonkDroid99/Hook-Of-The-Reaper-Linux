@@ -87,8 +87,8 @@ void HookTCPSocket::TCPReadData()
 
         if(inGame)
         {
-            qDebug() << "[HOTR] TCP in-game signal:" << splitData[0] << "=" << splitData[1]
-                     << "| inFilter:" << outputSignalsFilter.contains(splitData[0]);
+           // qDebug() << "[HOTR] TCP in-game signal:" << splitData[0] << "=" << splitData[1]
+           //         << "| inFilter:" << outputSignalsFilter.contains(splitData[0]);
 
             //Check if Light Guns and Light Controllers using Output Signal
             if(bothOutputSig)
@@ -217,8 +217,8 @@ void HookTCPSocket::SocketDisconnected()
 
     //qDebug() << "TCP Socket Disconnected";
 
-    //if(!stopConnecting)
-    //    Connect();
+    if(!stopConnecting)
+        Connect();
 }
 
 

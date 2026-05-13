@@ -82,9 +82,6 @@ void HookCOMPort::Connect(const quint8 &playerNum, const quint8 &comPortNum, con
         p_ComPortArray[comPortNum]->setStopBits ((QSerialPort::StopBits) comPortStop);
         p_ComPortArray[comPortNum]->setFlowControl ((QSerialPort::FlowControl) comPortFlow);
 
-        QSerialPortInfo newPortInfo(comPortName);
-        p_ComPortArray[comPortNum]->setPort (newPortInfo);
-
         if(isWriteOnly)
             isOpen = p_ComPortArray[comPortNum]->open(QIODevice::WriteOnly);
         else
@@ -96,7 +93,7 @@ void HookCOMPort::Connect(const quint8 &playerNum, const quint8 &comPortNum, con
             QSerialPort::SerialPortError portError = p_ComPortArray[comPortNum]->error();
             QString critMessage = "Can not open the Serial COM Port: "+comPortName+" on Port: "+QString::number(comPortNum)+". Make sure a light gun or a COM device is on that port number. Serial Port Error: "+QString::number(portError);
             emit ErrorMessage("Serial COM Port Error",critMessage);
-            //qDebug() << critMessage;
+            qDebug() << critMessage;
             return;
         }
         else
