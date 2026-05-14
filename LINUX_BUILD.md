@@ -130,7 +130,7 @@ This downloads `linuxdeploy` and its Qt plugin automatically on first run, then 
 
 ### Option B — Docker build (glibc 2.35 / Ubuntu 22.04)
 
-r maximum compatibility with older systems, build inside a Docker container:
+maximum compatibility with older systems, build inside a Docker container:
 
 ```bash
 bash make_appimage_docker.sh
@@ -149,7 +149,21 @@ The AppImage automatically sets `QT_QPA_PLATFORM=xcb` (unless you've already set
 
 The `data/` directory must be in the **same folder as the AppImage file**. On first run, HOTR will look there for configuration. If the AppImage directory is not writable (e.g. on a read-only filesystem), HOTR falls back to `~/.HookOfTheReaper/data/`.
 
+## Running as a Service with no UI
 
+Can be run as a service with no UI, need manually configuring first and then running. Useful for arcade implementations like batocera.
+Note: This is new and may have issues.
+
+Can also be run via ./HookOfTheReaper --no-ui
+
+If running as a service Binary needs installing /usr/local/bin and the Data files (Data, DefaultLG) to /usr/local/share/hookofthereaper
+
+Addding the service and running:
+
+sudo cp hookofthereaper.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable hookofthereaper@USERNAME
+sudo systemctl start hookofthereaper@USERNAME
 
 ---
 
@@ -185,6 +199,11 @@ To reset configuration, delete or clear the relevant `data/` directory. HOTR wil
 
 **AppImage fails with `xcb` platform error**
 - This should be handled automatically by the AppRun script. If it still occurs: `export QT_QPA_PLATFORM=xcb` before running
+
+
+
+
+
 
 
 

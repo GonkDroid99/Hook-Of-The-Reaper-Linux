@@ -84,6 +84,7 @@ add_executable(HookOfTheReaper
     defaultLG/alien3.txt defaultLG/confmiss.txt defaultLG/ptblank2.txt
     COMDeviceList/UltimarcLC.h COMDeviceList/UltimarcLC.cpp
     COMDeviceList/ALEDStripLC.h COMDeviceList/ALEDStripLC.cpp
+    ServiceController.h ServiceController.cpp
 )
 
 

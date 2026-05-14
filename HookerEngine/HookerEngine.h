@@ -323,6 +323,9 @@ private:
     //Current Display Signal with Updated Data
     void UpdateSignalForDisplay(QString sig, QString dat);
 
+    //Show error dialog in GUI mode, log to stderr in service mode
+    void ShowError(const QString &title, const QString &message);
+
 
 
     //Disconnects the Game Player Connections, before connecting them again.

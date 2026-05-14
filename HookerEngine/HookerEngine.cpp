@@ -108,7 +108,7 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
     if(!canMKDIR)
     {
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "File Error", "Can not make the directory ini. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+            ShowError("File Error", "Can not make the directory ini. Please close program and solve file problem. Might be permissions problem.");;
         return;
     }
 
@@ -479,7 +479,7 @@ bool HookerEngine::LoadINIFileTest(QString fileNamePath)
     {
         QString tempCrit = "Can not open INI data file to read. Please close program and solve file problem. Might be permissions problem.\nFile: "+fileNamePath;
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "File Error", tempCrit, QMessageBox::Ok);
+            ShowError("File Error", tempCrit);;
         return false;
     }
 
@@ -651,7 +651,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
     {
         QString tempCrit = "Can not open default light gun game file to read. Please close program and solve file problem. Might be permissions problem.\nFile: "+fileNamePath;
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+            ShowError("Default Light Gun Game File Error", tempCrit);;
         return false;
     }
 
@@ -681,7 +681,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "The number pf Players, is not a number. Please close program and fix.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
 
@@ -698,7 +698,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "The player needs to be P[1-4]. Please close program and fix.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -715,7 +715,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Something is after the player, and is not Slow mode.\nLine Number: "+QString::number(lineNumber)+"\nAfter player: "+playerSlowMode[1]+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
                     }
@@ -732,7 +732,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Player number under \"Players\" is out of range. Player number range is 1-4.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
                         lgPlayerOrderTest[i] = playerNumber-1;
@@ -742,7 +742,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Player number was not a number in game file.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
                     //qDebug() << "Player " << i << " connected to: " << line;
@@ -799,7 +799,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "No Player(s) have assign light gun. Atleast one player needs to have an assign light gun. Please close game, and then assign a light gun to the player.\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
 
@@ -844,7 +844,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Ammo_Value' Recoil Options\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -881,7 +881,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Recoil' Recoil Options\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -918,7 +918,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Recoil_R2S' Recoil Options\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -955,7 +955,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Recoil_Value' Recoil Options\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1008,7 +1008,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "Cannot find a supported recoil option.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
             }
@@ -1028,7 +1028,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "Options need to come before the States.\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
             else if(line.startsWith(OPTIONSSECTION))
@@ -1052,7 +1052,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Block Shake needs E or NE next, and then the value.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1061,7 +1061,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Block Shake needs E or NE next, and then the value.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1072,7 +1072,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Block Shake needs a number at the end.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1084,7 +1084,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                                 lgFile.close();
                                 QString tempCrit = "Block Shake Start option is not correct.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                                 if(displayMB)
-                                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                    ShowError("Default Light Gun Game File Error", tempCrit);;
                                 return false;
                             }
                         }
@@ -1099,7 +1099,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Block Recoil_R2S needs E or NE next, and then the value.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1108,7 +1108,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Block Recoil_R2S needs E or NE next, and then the value.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1119,7 +1119,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "Block Recoil_R2S needs a number at the end.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1131,7 +1131,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                                 lgFile.close();
                                 QString tempCrit = "Block Recoil_R2S Start option is not correct.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                                 if(displayMB)
-                                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                    ShowError("Default Light Gun Game File Error", tempCrit);;
                                 return false;
                             }
                         }
@@ -1145,7 +1145,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "The Override_Recoil_Voltage should have 2 parts. The Override_Recoil_Voltage and a number from 0-10.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1156,7 +1156,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "The Override Recoil Voltage number is not a number or greater than 10.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
                     }
@@ -1169,7 +1169,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "The Sinden_Trigger_Recoil should have 2 parts. The Sinden_Trigger_Recoil and a number from 0-3.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
 
@@ -1180,7 +1180,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                             lgFile.close();
                             QString tempCrit = "The Sinden Trigger Recoil number is not a number or greater than 3.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return false;
                         }
                     }
@@ -1193,7 +1193,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "This Option doesn't exist in the DefaultLG protocol.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -1251,7 +1251,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "A signal cannot have a = for the Default Light Gun game format. You might be confussed with MAMEHooker INI format, which uses the = sign.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1272,7 +1272,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "There are two or more Player lines back to back.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1296,7 +1296,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Player Number is not a number in defaultLG game file.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number:"+tempLine+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -1316,7 +1316,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Player Number does not match loaded Players in defaultLG game file.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number:"+tempLine+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -1332,7 +1332,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "Something is wrong with Player Number in defaultLG game file. Can be *All or *P[1-4].\nLine Number: "+QString::number(lineNumber)+"\nLine :"+line+"\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
 
@@ -1347,7 +1347,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "File cannot end on a player(*). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
             else
@@ -1355,7 +1355,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "Player(*) came before a signal(:). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
         }
@@ -1372,7 +1372,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "Recoil_R2S command doesn't support the '|'.\nLine Number: "+QString::number(lineNumber)+"\nCMD: Recoil_R2S"+"\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
 
@@ -1391,7 +1391,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Command(>) is not found in the command list. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+subCommands[i]+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
                 }
@@ -1410,7 +1410,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Too many variables after Recoil_R2S command. Can only have 0-1 variable. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+subCommands[2]+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -1423,7 +1423,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Recoil_R2S Skew is not a number.\nLine Number: "+QString::number(lineNumber)+"\nSkew Number:"+subCommands[1]+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -1438,7 +1438,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "Command(>) is not found in the command list. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
             }
@@ -1489,7 +1489,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "No player(*) between a signal(:) and command(>). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nSignal: "+signal+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1505,7 +1505,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option command data is missing in game file.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1515,7 +1515,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option Commands command doesn't support the '|'.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1525,7 +1525,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option Commands command doesn't support the *All players.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1535,7 +1535,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option Commands command has Output Signal, but no Player.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+fileNamePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return false;
             }
 
@@ -1576,7 +1576,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Too many variables after Recoil_R2S command. Can only have 0-1 variable. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+subCommands[2]+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -1587,7 +1587,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                         lgFile.close();
                         QString tempCrit = "Recoil_R2S Skew is not a number.\nLine Number: "+QString::number(lineNumber)+"\nSkew Number:"+subCommands[1]+"\nFile: "+fileNamePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return false;
                     }
 
@@ -1604,7 +1604,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "Command(>) is not found in the command list. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
 
@@ -1653,7 +1653,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
                     lgFile.close();
                     QString tempCrit = "No player(*) between a signal(:) and command(>). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nSignal: "+signal+"\nFile: "+fileNamePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return false;
                 }
             }  //if(recoilCMDsMap[reOption].contains(line))
@@ -1664,7 +1664,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
             lgFile.close();
             QString tempCrit = "This Line has no place in DefaultLG game file. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nLine: "+line+"\nFile: "+fileNamePath;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                ShowError("Default Light Gun Game File Error", tempCrit);;
             return false;
         }
 
@@ -1694,7 +1694,7 @@ bool HookerEngine::LoadLGFileTest(QString fileNamePath)
         lgFile.close();
         QString tempCrit = "No Signal, Player, and Command (not counting mame_start/mame_stop) was loaded into the QMap. If No signals to watch out for, then nothing to do, but to connect and disconnect.\nFile: "+fileNamePath;
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+            ShowError("Default Light Gun Game File Error", tempCrit);;
         return false;
     }
 
@@ -1849,6 +1849,8 @@ void HookerEngine::ErrorMessage(const QString &title, const QString &message)
 {
     if(displayMB)
         QMessageBox::critical (p_guiConnect, title, message, QMessageBox::Ok);
+    else
+        qCritical() << "[HookerEngine]" << title << ":" << message;
 }
 
 
@@ -2080,7 +2082,7 @@ void HookerEngine::PXCloseSolenoid(quint8 player)
         tempCrit.append ("\n\nThis is the third time or more now! Don't be the reason why every shirt has \"Don't Iron while Wearing\" printed on it's tag");
 
     if(displayMB)
-        QMessageBox::critical (p_guiConnect, "Solenoid Open Too Long", tempCrit, QMessageBox::Ok);
+        ShowError("Solenoid Open Too Long", tempCrit);;
 
 }
 
@@ -3173,7 +3175,7 @@ void HookerEngine::LoadINIFile()
     {
         QString tempCrit = "Can not open INI data file to read. Please close program and solve file problem. Might be permissions problem.\nFile: "+gameINIFilePath;
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "File Error", tempCrit, QMessageBox::Ok);
+            ShowError("File Error", tempCrit);;
         return;
     }
 
@@ -3339,7 +3341,7 @@ bool HookerEngine::CheckINICommands(QStringList commadsNotChk, quint16 lineNumbe
                 {
                     QString tempCrit = "Loaded INI game file has a bad command. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+subCommands[j]+"\nFile: "+filePathName;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Loaded INI Game File Has Error", tempCrit);;
                     return false;
                 }
             }
@@ -3356,7 +3358,7 @@ bool HookerEngine::CheckINICommands(QStringList commadsNotChk, quint16 lineNumbe
             {
                 QString tempCrit = "Loaded INI game file has a bad command. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+command+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
         }
@@ -3396,7 +3398,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, port number is not a number.\nLine Number: "+QString::number(lineNumber)+"\nPort Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3418,7 +3420,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, baud rate is not a number.\nLine Number: "+QString::number(lineNumber)+"\nBaud Rate Number: "+temp2[0]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3434,7 +3436,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, baud rate is not a correct rate.\nLine Number: "+QString::number(lineNumber)+"\nBaud Rate Number: "+temp2[0]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3453,7 +3455,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, parity is not a correct char[N,E,O,S,M].\nLine Number: "+QString::number(lineNumber)+"\nParity Char: "+temp2[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3463,7 +3465,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, data bits is not a number.\nLine Number: "+QString::number(lineNumber)+"\nData Bits Number: "+temp2[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3472,7 +3474,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, data bits is not in range [5-8].\nLine Number: "+QString::number(lineNumber)+"\nData Bits Number: "+temp2[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3486,7 +3488,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, stop bits is not a number.\nLine Number: "+QString::number(lineNumber)+"\nStop Bits Number: "+temp2[3]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3495,7 +3497,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port open command, stop bits is not in range [1,1.5,2].\nLine Number: "+QString::number(lineNumber)+"\nData Bits Number: "+temp2[3]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3517,7 +3519,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port close command, port number is not a number.\nLine Number: "+QString::number(lineNumber)+"\nPort Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Loaded INI Game File Has Error", tempCrit);;
                 return false;
             }
 
@@ -3527,7 +3529,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
                 {
                     QString tempCrit = "In COM port close command, port number doesn't match any open port number(s).\nLine Number: "+QString::number(lineNumber)+"\nPort Number: "+temp1[1]+"\nFile: "+filePathName;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Loaded INI Game File Has Error", tempCrit);;
                     return false;
                 }
             }
@@ -3543,7 +3545,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
 
             QString tempCrit = "In COM port read, reads are not implamented yet. Please remove read.\nLine Number: "+QString::number(lineNumber)+"\nRead CMD: "+commndNotChk+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                ShowError("Loaded INI Game File Has Error", tempCrit);;
             return false;
 
 
@@ -3564,7 +3566,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In COM port write command, port number is not a number.\nLine Number: "+QString::number(lineNumber)+"\nPort Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3574,7 +3576,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
                 {
                     QString tempCrit = "In COM port write command, port number doesn't match any open port number(s).\nLine Number: "+QString::number(lineNumber)+"\nPort Number: "+temp1[1]+"\nFile: "+filePathName;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Loaded INI Game File Has Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Loaded INI Game File Has Error", tempCrit);;
                     return false;
                 }
             }
@@ -3597,7 +3599,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
         {
             QString tempCrit = "In USB HID write command, doesn't have enough or too many variables. It should be ghd and 5 variables.\nLine Number: "+QString::number(lineNumber)+"\nCommand: "+commndNotChk+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                ShowError("Processes INI Command Error", tempCrit);;
             return false;
         }
 
@@ -3611,7 +3613,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
         {
             QString tempCrit = "In USB HID write command, Device is not a number.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                ShowError("Processes INI Command Error", tempCrit);;
             return false;
         }
 
@@ -3625,7 +3627,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In USB HID write command, VendorID is not a hex number.\nLine Number: "+QString::number(lineNumber)+"\nVendorID Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
         }
@@ -3633,7 +3635,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
         {
             QString tempCrit = "In USB HID write command, VendorID doesn't have the needed &H in front of number.\nLine Number: "+QString::number(lineNumber)+"\nVendorID: "+temp1[2]+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                ShowError("Processes INI Command Error", tempCrit);;
             return false;
         }
 
@@ -3647,7 +3649,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In USB HID write command, ProductID is not a hex number.\nLine Number: "+QString::number(lineNumber)+"\nProductID Number: "+temp1[3]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
         }
@@ -3655,7 +3657,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
         {
             QString tempCrit = "In USB HID write command, ProductID doesn't have the needed &H in front of number.\nLine Number: "+QString::number(lineNumber)+"\nProductID: "+temp1[3]+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                ShowError("Processes INI Command Error", tempCrit);;
             return false;
         }
 
@@ -3665,7 +3667,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
         {
             QString tempCrit = "In USB HID write command, Cannot find the HID with the vendorID, productID, and device number.\nLine Number: "+QString::number(lineNumber)+"\nProductID: "+temp1[3]+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                ShowError("Processes INI Command Error", tempCrit);;
             return false;
         }
 
@@ -3675,7 +3677,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
         {
             QString tempCrit = "In USB HID write command, Number of Bytes is not a number.\nLine Number: "+QString::number(lineNumber)+"\nNumber of Bytes: "+temp1[4]+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                ShowError("Processes INI Command Error", tempCrit);;
             return false;
         }
 
@@ -3685,7 +3687,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
         {
             QString tempCrit = "In USB HID write command, Number of Bytes doesn't equal number of data bytes.\nLine Number: "+QString::number(lineNumber)+"\nNumber of Bytes: "+temp1[4]+"\nData Bytes: "+temp1[5]+"\nFile: "+filePathName;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                ShowError("Processes INI Command Error", tempCrit);;
             return false;
         }
 
@@ -3701,7 +3703,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
                 {
                     QString tempCrit = "In USB HID write command, Data Byte is not a hex number.\nLine Number: "+QString::number(lineNumber)+"\nData Byte: "+temp2[i]+"\nFile: "+filePathName;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Processes INI Command Error", tempCrit);;
                     return false;
                 }
 
@@ -3711,7 +3713,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In USB HID write command, Data Byte doesn't have the needed &h in front of number.\nLine Number: "+QString::number(lineNumber)+"\nData Byte: "+temp2[i]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
         }
@@ -3738,7 +3740,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "The Ultimarc State command, doesn't have enough or too many variables. It should be uls and 3 variables.\nLine Number: "+QString::number(lineNumber)+"\nCommand: "+commndNotChk+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3749,7 +3751,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, Device is not a number.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3759,7 +3761,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, Device number is 0 or less.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3767,7 +3769,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, Device number doesn't exisits.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3781,7 +3783,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, Pin is not a number.\nLine Number: "+QString::number(lineNumber)+"\nPin Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3789,7 +3791,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, Pin number is 0.\nLine Number: "+QString::number(lineNumber)+"\nPin Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3799,7 +3801,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, Pin number is too high for device.\nLine Number: "+QString::number(lineNumber)+"\nPin Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3809,7 +3811,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, State is not a number.\nLine Number: "+QString::number(lineNumber)+"\nState Number: "+temp1[3]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3817,7 +3819,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc State command, State can only be 0 or 1.\nLine Number: "+QString::number(lineNumber)+"\nState Number: "+temp1[3]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3833,7 +3835,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "The Ultimarc Intensity command, doesn't have enough or too many variables. It should be uls and 3 variables.\nLine Number: "+QString::number(lineNumber)+"\nCommand: "+commndNotChk+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3844,7 +3846,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Device is not a number.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3854,7 +3856,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Device number is 0 or less.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3862,7 +3864,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Device number doesn't exisits.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3875,7 +3877,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Pin is not a number.\nLine Number: "+QString::number(lineNumber)+"\nPin Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3883,7 +3885,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Pin number is 0.\nLine Number: "+QString::number(lineNumber)+"\nPin Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3893,7 +3895,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Pin number is too high for device.\nLine Number: "+QString::number(lineNumber)+"\nPin Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3903,7 +3905,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Intensity is not a number.\nLine Number: "+QString::number(lineNumber)+"\nIntensity Number: "+temp1[3]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3911,7 +3913,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Intensity command, Intensity is over 255.\nLine Number: "+QString::number(lineNumber)+"\nIntensity Number: "+temp1[3]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3927,7 +3929,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "The Ultimarc Fade command, doesn't have enough or too many variables. It should be uls and 3 variables.\nLine Number: "+QString::number(lineNumber)+"\nCommand: "+commndNotChk+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3938,7 +3940,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Fade command, Device is not a number.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3948,7 +3950,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Fade command, Device number is 0 or less.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3956,7 +3958,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Fade command, Device number doesn't exisits.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3966,7 +3968,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Fade command, Intensity is not a number.\nLine Number: "+QString::number(lineNumber)+"\nFade Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3974,7 +3976,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Fade command, Fade is over 255.\nLine Number: "+QString::number(lineNumber)+"\nFade Number: "+temp1[2]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -3990,7 +3992,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "The Ultimarc Kill command, doesn't have enough or too many variables. It should be uls and 3 variables.\nLine Number: "+QString::number(lineNumber)+"\nCommand: "+commndNotChk+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -4001,7 +4003,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Kill command, Device is not a number.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -4011,7 +4013,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Kill command, Device number is 0 or less.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -4019,7 +4021,7 @@ bool HookerEngine::CheckINICommand(QString commndNotChk, quint16 lineNumber, QSt
             {
                 QString tempCrit = "In Ultimarc Kill command, Device number doesn't exisits.\nLine Number: "+QString::number(lineNumber)+"\nDevice Number: "+temp1[1]+"\nFile: "+filePathName;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Processes INI Command Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Processes INI Command Error", tempCrit);;
                 return false;
             }
 
@@ -4058,7 +4060,7 @@ bool HookerEngine::FindUSBHIDDeviceINI(quint16 vendorID, quint16 productID, quin
         {
             QString tempCrit = "The USB HID Init failed in the Hooker Engine. Something got fucked up.";
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Hooker Engine: USB HID Init", tempCrit, QMessageBox::Ok);
+                ShowError("Hooker Engine: USB HID Init", tempCrit);;
             return false;
         }
         else
@@ -4141,7 +4143,7 @@ bool HookerEngine::FindUSBHIDDeviceINI(quint16 vendorID, quint16 productID, quin
             {
                 QString tempCrit = "The USB HID can only have 4 HIDs open at one time for the light guns. This is for P1 to P4.\nVendorID: "+QString::number(vendorID, 16)+"\nProductID: "+QString::number(productID, 16)+"\nDevice Number: "+QString::number(deviceNumber);
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Hooker Engine: USB HID INI", tempCrit, QMessageBox::Ok);
+                    ShowError("Hooker Engine: USB HID INI", tempCrit);;
                 return false;
             }
 
@@ -4164,7 +4166,7 @@ bool HookerEngine::FindUSBHIDDeviceINI(quint16 vendorID, quint16 productID, quin
 
     QString tempCrit = "The USB HID search cannot find the device. Something got fucked up.\nVendorID: "+QString::number(vendorID, 16)+"\nProductID: "+QString::number(productID, 16)+"\nDevice Number: "+QString::number(deviceNumber);
     if(displayMB)
-        QMessageBox::critical (p_guiConnect, "Hooker Engine: USB HID INI", tempCrit, QMessageBox::Ok);
+        ShowError("Hooker Engine: USB HID INI", tempCrit);;
     return false;
 
 }
@@ -4181,7 +4183,7 @@ void HookerEngine::NewINIFile()
     if(!copyFile)
     {
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "File Error", "Can not copy default INI file to ini/MAME. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+            ShowError("File Error", "Can not copy default INI file to ini/MAME. Please close program and solve file problem. Might be permissions problem.");;
         return;
     }
 
@@ -4196,7 +4198,7 @@ void HookerEngine::NewINIFile()
     {
         QString tempCrit = "Can not open INI data file to read. Please close program and solve file problem. Might be permissions problem.\nFile: "+gameINIFilePath;
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "File Error", tempCrit, QMessageBox::Ok);
+            ShowError("File Error", tempCrit);;
         return;
     }
 
@@ -4609,7 +4611,7 @@ void HookerEngine::NewLGFile()
     if(!copyFile)
     {
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "File Error", "Can not copy top of Default Light Gun game file to defaultLG directory. Please close program and solve file problem. Might be permissions problem.\nFile: "+gameLGFilePath, QMessageBox::Ok);
+            ShowError("File Error", "Can not copy top of Default Light Gun game file to defaultLG directory. Please close program and solve file problem. Might be permissions problem.\nFile: "+gameLGFilePath);;
         return;
     }
 
@@ -4624,7 +4626,7 @@ void HookerEngine::NewLGFile()
     {
         QString tempCrit = "Can not open new default light gun game file to write. Please close program and solve file problem. Might be permissions problem.\nFile: "+gameLGFilePath;
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "File Error", tempCrit, QMessageBox::Ok);
+            ShowError("File Error", tempCrit);;
         return;
     }
 
@@ -4704,7 +4706,7 @@ void HookerEngine::LoadLGFile()
     {
         QString tempCrit = "Can not open default light gun game file to read. Please close program and solve file problem. Might be permissions problem.\nFile: "+gameLGFilePath;
         if(displayMB)
-            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+            ShowError("Default Light Gun Game File Error", tempCrit);;
         return;
     }
 
@@ -4735,7 +4737,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "The number of Players is not a number. Please close program and fix.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
 
@@ -4756,7 +4758,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "The player needs to be P[1-4]. Please close program and fix.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -4777,7 +4779,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Something is after the player, and is not Slow mode.\nLine Number: "+QString::number(lineNumber)+"\nAfter player: "+playerSlowMode[1]+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
                     }
@@ -4796,7 +4798,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Player number under \"Players\" is out of range. Player number range is 1-4.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
                         lgPlayerOrder[i] = playerNumber-1;
@@ -4807,7 +4809,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Player number was not a number in game file.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
                     //qDebug() << "Player " << i << " connected to: " << line;
@@ -4907,7 +4909,7 @@ void HookerEngine::LoadLGFile()
                                     lgFile.close();
                                     QString tempCrit = "Three or more TCP Server ports cannot be used.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+gameLGFilePath;
                                     if(displayMB)
-                                        QMessageBox::critical (p_guiConnect, "DefaultLG Game File Load Error", tempCrit, QMessageBox::Ok);
+                                        ShowError("DefaultLG Game File Load Error", tempCrit);;
                                     return;
                                 }
                             }
@@ -4926,7 +4928,7 @@ void HookerEngine::LoadLGFile()
                                 lgFile.close();
                                 QString tempCrit = "TCP Server port cannot be found for player.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number: "+line+"\nFile: "+gameLGFilePath;
                                 if(displayMB)
-                                    QMessageBox::critical (p_guiConnect, "DefaultLG Game File Load Error", tempCrit, QMessageBox::Ok);
+                                    ShowError("DefaultLG Game File Load Error", tempCrit);;
                                 return;
                             }
                         }
@@ -4936,7 +4938,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Game Player " + QString::number(i) + " light gun doesn't have output connection method.\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "DefaultLG Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("DefaultLG Game File Error", tempCrit);;
                             return;
                         }
 
@@ -4968,7 +4970,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "No Player(s) have assign light gun. Atleast one player needs to have an assign light gun. Please close game, and then assign a light gun to the player.\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
 
@@ -5014,7 +5016,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Ammo_Value' Recoil Options\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5052,7 +5054,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Recoil' Recoil Options\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5090,7 +5092,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Recoil_R2S' Recoil Options\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5128,7 +5130,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "The line didn't match 'Recoil_Value' Recoil Options\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5179,7 +5181,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "Cannot find a supported recoil option.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
             }
@@ -5201,7 +5203,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "Options need to come before the States.\nLine"+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
             else if(line.startsWith(OPTIONSSECTION))
@@ -5229,7 +5231,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Block Shake has too many or too few elements.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5243,7 +5245,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Block Shake needs E or NE next, and then the value.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5255,7 +5257,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Block Shake needs a number at the end.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5268,7 +5270,7 @@ void HookerEngine::LoadLGFile()
                                 lgFile.close();
                                 QString tempCrit = "Block Shake Start option is not correct.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                                 if(displayMB)
-                                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                    ShowError("Default Light Gun Game File Error", tempCrit);;
                                 return;
                             }
                             else
@@ -5292,7 +5294,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Block Recoil_R2S has too many or too few elements.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5306,7 +5308,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Block Recoil_R2S needs E or NE next, and then the value.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5318,7 +5320,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "Block Recoil_R2S needs a number at the end.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5331,7 +5333,7 @@ void HookerEngine::LoadLGFile()
                                 lgFile.close();
                                 QString tempCrit = "Block Recoil_R2S Start option is not correct.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                                 if(displayMB)
-                                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                    ShowError("Default Light Gun Game File Error", tempCrit);;
                                 return;
                             }
                             else
@@ -5351,7 +5353,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "The Override_Recoil_Voltage should have 2 parts. The Override_Recoil_Voltage and a number from 0-10.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5363,7 +5365,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "The Override Recoil Voltage number is not a number or greater than 10.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5386,7 +5388,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "The Sinden_Trigger_Recoil should have 2 parts. The Sinden_Trigger_Recoil and a number from 0-3.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5398,7 +5400,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "The Sinden Trigger Recoil number is not a number or greater than 3.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5437,7 +5439,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "The Ultimarc Override Fade argument number is not 1.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5451,7 +5453,7 @@ void HookerEngine::LoadLGFile()
                             lgFile.close();
                             QString tempCrit = "The Ultimarc Override Fade is not a number.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                             if(displayMB)
-                                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                                ShowError("Default Light Gun Game File Error", tempCrit);;
                             return;
                         }
 
@@ -5467,7 +5469,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "This Option doesn't exists in the DefaultLG protocol.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -5549,7 +5551,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "A signal cannot have a = for the Default Light Gun game format. You might be confussed with MAMEHooker INI format, which uses the = sign.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5571,7 +5573,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "There are two or more Player lines back to back.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5598,7 +5600,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Player Number is not a number in defaultLG game file.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number:"+tempLine+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -5619,7 +5621,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Player Number does not match loaded Players in defaultLG game file.\nLine Number: "+QString::number(lineNumber)+"\nPlayer Number:"+tempLine+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -5636,7 +5638,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "Something is wrong with Player Number in defaultLG game file. Can be *All or *P[1-4].\nLine Number: "+QString::number(lineNumber)+"\nLine: "+line+"\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
 
@@ -5656,7 +5658,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "File cannot end on a player(*). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
             else
@@ -5665,7 +5667,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "Player(*) came before a signal(:). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
         }
@@ -5681,7 +5683,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "Recoil_R2S command doesn't support the '|'.\nLine Number: "+QString::number(lineNumber)+"\nCMD: Recoil_R2S"+"\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
 
@@ -5701,7 +5703,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Command(>) is not found in the command list. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+subCommands[i]+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
                 }
@@ -5719,7 +5721,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Too many variables after Recoil_R2S command. Can only have 0-1 variable. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+subCommands[2]+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -5732,7 +5734,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Recoil_R2S Skew is not a number.\nLine Number: "+QString::number(lineNumber)+"\nSkew Number:"+subCommands[1]+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -5748,7 +5750,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "Command(>) is not found in the command list. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
             }
@@ -5820,7 +5822,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "No player(*) between a signal(:) and command(>). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nSignal: "+signal+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
         }  //else if(line[0] == COMMANDSTARTCHAR)
@@ -5836,7 +5838,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option command data is missing in game file.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5847,7 +5849,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option Commands command doesn't support the '|'.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5858,7 +5860,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option Commands command doesn't support the *All players.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5869,7 +5871,7 @@ void HookerEngine::LoadLGFile()
                 lgFile.close();
                 QString tempCrit = "Recoil\\Reload Option Commands command has Output Signal, but no Player.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+gameLGFilePath;
                 if(displayMB)
-                    QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                    ShowError("Default Light Gun Game File Error", tempCrit);;
                 return;
             }
 
@@ -5911,7 +5913,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Too many variables after Recoil_R2S command. Can only have 0-1 variable. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+subCommands[2]+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -5924,7 +5926,7 @@ void HookerEngine::LoadLGFile()
                         lgFile.close();
                         QString tempCrit = "Recoil_R2S Skew is not a number.\nLine Number: "+QString::number(lineNumber)+"\nSkew Number:"+subCommands[1]+"\nFile: "+gameLGFilePath;
                         if(displayMB)
-                            QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                            ShowError("Default Light Gun Game File Error", tempCrit);;
                         return;
                     }
 
@@ -5942,7 +5944,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "Command(>) is not found in the command list. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nCMD: "+line+"\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
 
@@ -6012,7 +6014,7 @@ void HookerEngine::LoadLGFile()
                     lgFile.close();
                     QString tempCrit = "No player(*) between a signal(:) and command(>). Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nSignal: "+signal+"\nFile: "+gameLGFilePath;
                     if(displayMB)
-                        QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                        ShowError("Default Light Gun Game File Error", tempCrit);;
                     return;
                 }
             }  //if(recoilCMDsMap[reOption].contains(line))
@@ -6024,7 +6026,7 @@ void HookerEngine::LoadLGFile()
             lgFile.close();
             QString tempCrit = "This Line has no place in DefaultLG game file. Please close program and solve file problem.\nLine Number: "+QString::number(lineNumber)+"\nLine: "+line+"\nFile: "+gameLGFilePath;
             if(displayMB)
-                QMessageBox::critical (p_guiConnect, "Default Light Gun Game File Error", tempCrit, QMessageBox::Ok);
+                ShowError("Default Light Gun Game File Error", tempCrit);;
             return;
         }
 
@@ -6951,3 +6953,11 @@ void HookerEngine::DisconnectGamePlayers()
         }
     }
 }
+
+void HookerEngine::ShowError(const QString &title, const QString &message)
+  {
+      if(displayMB)
+          QMessageBox::critical(p_guiConnect, title, message, QMessageBox::Ok);
+      else
+          qCritical() << "[HookerEngine]" << title << ":" << message;
+  }

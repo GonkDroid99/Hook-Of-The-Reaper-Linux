@@ -246,6 +246,8 @@ public:
 private:
 
 
+    // Error Helper
+    void ShowError(const QString &title, const QString &message);
 
     //Available Serial COM Ports
     bool                availableComPorts[MAXCOMPORTS];

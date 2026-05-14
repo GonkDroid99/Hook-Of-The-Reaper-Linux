@@ -62,7 +62,7 @@ void HookCOMPort::Connect(const quint8 &playerNum, const quint8 &comPortNum, con
     Q_UNUSED(playerNum)
     Q_UNUSED(comPortPath)
 
-    qDebug() << "Creating a New Serial Com Port at: " << comPortNum << " With the name of: " << comPortName;
+    //qDebug() << "Creating a New Serial Com Port at: " << comPortNum << " With the name of: " << comPortName;
 
     //Check if it is Already Open, if so, do nothing
     if(comPortOpen[comPortNum] == false)
@@ -109,8 +109,8 @@ void HookCOMPort::Connect(const quint8 &playerNum, const quint8 &comPortNum, con
         }
 
     }
-    qDebug() << "Done with Connecting Port";
-    qDebug() << "comPortOpen[comPortNum]: " << comPortOpen[comPortNum] << " comPortNum: " << comPortNum << " comPortName: " << comPortName;
+    //qDebug() << "Done with Connecting Port";
+    //qDebug() << "comPortOpen[comPortNum]: " << comPortOpen[comPortNum] << " comPortNum: " << comPortNum << " comPortName: " << comPortName;
 
 }
 
@@ -171,7 +171,7 @@ void HookCOMPort::WriteData(const quint8 &comPortNum, const QByteArray &writeDat
 
         //qDebug() << "bytesWritten is : " << bytesWritten << " and QByteArray size is: " << writeData.size();
 
-        qDebug() << "Data to be Written: " << QString::fromStdString (writeData.toStdString ()) << " to Port #" << comPortNum << " bytesWritten:" << bytesWritten;
+        //qDebug() << "Data to be Written: " << QString::fromStdString (writeData.toStdString ()) << " to Port #" << comPortNum << " bytesWritten:" << bytesWritten;
 
         //If the data has not been Written, flush & wait 100 milli-secs
         if(bytesWritten != writeData.size())

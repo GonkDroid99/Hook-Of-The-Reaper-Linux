@@ -1,4 +1,5 @@
 
+#include "ServiceController.h"
 #include "hookOfTheReaper.h"
 
 #include <QApplication>
@@ -13,6 +14,23 @@
 
 int main(int argc, char *argv[])
 {
+
+// check for --no-ui
+
+    bool noUI = false;
+    for (int i = 1; i < argc; i++){
+        if (QString(argv[i]) == "--no-ui") {
+            noUI = true;
+            break;
+        }
+    }
+    if (noUI) {
+        QCoreApplication a (argc, argv);
+        ServiceController::setupUnixSignalHandlers();
+        ServiceController controller;
+        return a.exec();
+    }
+
     QApplication a(argc, argv);
 
     //Code to Check if Program Already Running or Not
@@ -75,6 +93,7 @@ else
         return 1;
     }
 }
+
 
 
 

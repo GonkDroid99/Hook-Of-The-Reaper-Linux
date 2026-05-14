@@ -1,0 +1,16 @@
+[Unit]
+Description=Hook of the Reaper Light Gun Service
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+ExecStart=/usr/local/bin/HookOfTheReaper --no-ui
+WorkingDirectory=/usr/local/share/hookofthereaper
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

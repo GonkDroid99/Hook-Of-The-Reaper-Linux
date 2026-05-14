@@ -337,7 +337,7 @@ void ComDeviceList::AddLightController(UltimarcData dataU)
     if(!isFound && !bypassCantFindLightCntlr)
     {
         QString message = "Light Controller "+dataU.typeName+" with product ID "+dataU.productIDS+" and serial number "+dataU.serialNumber+" is not found. Not loading it into the list. Please close HOTR and solve problem.";
-        QMessageBox::critical (nullptr, "Light Controller Error", message, QMessageBox::Ok);
+        ShowError("Light Controller Error", message);
         return;
     }
 
@@ -397,7 +397,7 @@ void ComDeviceList::AddLightController(UltimarcData dataU)
     if(!fileLoad)
     {
         QString message = "Light Controller "+dataU.typeName+" with product ID "+dataU.productIDS+" and serial number "+dataU.serialNumber+" failed to load group file. Deleting the light controller";
-        QMessageBox::critical (nullptr, "Light Controller Error", message, QMessageBox::Ok);
+        ShowError("Light Controller Error", message);
         DeleteLightController(numberLightCntrls-1);
         return;
     }
@@ -409,7 +409,7 @@ void ComDeviceList::AddALEDStripController(quint8 comNum, QString comName, Seria
     if(aledStripCntlrCOMList.contains(comName))
     {
         QString message = "ALED Strip Controller, on " + comName + ", is already added. Something got messed up.";
-        QMessageBox::critical (nullptr, "ALED Strip Light Controller Error", message, QMessageBox::Ok);
+        ShowError("ALED Strip Light Controller Error", message);
         return;
     }
 
@@ -919,7 +919,7 @@ void ComDeviceList::SaveLightGunList()
 
         if(!removedFile)
         {
-            QMessageBox::critical (nullptr, "File Error", "Can not remove old light gun save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.", QMessageBox::Ok);
+            ShowError("File Error", "Can not remove old light gun save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.");
             return;
         }
 
@@ -932,7 +932,7 @@ void ComDeviceList::SaveLightGunList()
 
     if(!removedFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not remove old light gun save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.", QMessageBox::Ok);
+        ShowError("File Error", "Can not remove old light gun save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.");
         return;
     }
 
@@ -945,7 +945,7 @@ void ComDeviceList::SaveLightGunList()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not create light gun save data file. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not create light gun save data file. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1194,7 +1194,7 @@ void ComDeviceList::SaveLightGunList()
         else
         {
             QString errMsg = "Light Gun output connection type is wrong. It is set at " + QString::number (p_lightGunList[i]->GetOutputConnection());
-            QMessageBox::critical (nullptr, "File Error", errMsg, QMessageBox::Ok);
+            ShowError("File Error", errMsg);
         }
     }
 
@@ -1225,7 +1225,7 @@ void ComDeviceList::LoadLightGunList()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not open light gun save data file to read. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not open light gun save data file to read. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1248,7 +1248,7 @@ void ComDeviceList::LoadLightGunList()
     //}
     else
     {
-        QMessageBox::critical (nullptr, "Light Gun List File Error", "The first line is not matching what it should be, something got fucked up in the file", QMessageBox::Ok);
+        ShowError("Light Gun List File Error", "The first line is not matching what it should be, something got fucked up in the file");
         return;
     }
 }
@@ -1286,7 +1286,7 @@ void ComDeviceList::LoadLightGunListV3()
     //Check if the File Exists, as it might not be created yet. If no File, then exit out of member function
     if(loadLGData.exists() == false)
     {
-        //QMessageBox::critical (nullptr, "File Error", "Can not open light gun save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        //ShowError("File Error", "Can not open light gun save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1298,7 +1298,7 @@ void ComDeviceList::LoadLightGunListV3()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not open light gun save data file to read. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not open light gun save data file to read. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1312,7 +1312,7 @@ void ComDeviceList::LoadLightGunListV3()
     if(line != STARTLIGHTGUNSAVEFILEV3)
     {
         //qDebug() << line;
-        QMessageBox::critical (nullptr, "File Error", "Light gun save data file is corrupted. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+        ShowError("File Error", "Light gun save data file is corrupted. Please try to reload file, or re-enter the light guns again.");
     }
 
     //Next Line is Number of Light Guns
@@ -1331,7 +1331,7 @@ void ComDeviceList::LoadLightGunListV3()
         if(line != cmpLine)
         {
             //qDebug() << line;
-            QMessageBox::critical (nullptr, "File Error", "Light gun save data file is corrupted. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+            ShowError("File Error", "Light gun save data file is corrupted. Please try to reload file, or re-enter the light guns again.");
         }
 
         //Next Line is the Light Gun Number
@@ -1397,7 +1397,7 @@ void ComDeviceList::LoadLightGunListV3()
 
         if(line != ENDGENERALSETTINGS)
         {
-            QMessageBox::critical (nullptr, "Light Gun List File Error", "The END_GENERAL_SETTINGS is not found in the light gun list saved data. Please fix the file, and then retry.", QMessageBox::Ok);
+            ShowError("Light Gun List File Error", "The END_GENERAL_SETTINGS is not found in the light gun list saved data. Please fix the file, and then retry.");
             loadLGData.close();
             return;
         }
@@ -1703,7 +1703,7 @@ void ComDeviceList::LoadLightGunListV3()
     if(line != ENDOFFILE)
     {
         //qDebug() << line;
-        QMessageBox::critical (nullptr, "File Error", "Light gun save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+        ShowError("File Error", "Light gun save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.");
     }
 
     //Close the File
@@ -1728,7 +1728,7 @@ void ComDeviceList::SavePlayersAss()
 
     if(!removedFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not remove old players assignment save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.", QMessageBox::Ok);
+        ShowError("File Error", "Can not remove old players assignment save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.");
         return;
     }
 
@@ -1740,7 +1740,7 @@ void ComDeviceList::SavePlayersAss()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not create player assignment save data file. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not create player assignment save data file. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1775,7 +1775,7 @@ void ComDeviceList::LoadPlayersAss()
 
     if(!lockFile.tryLock(FILELOCKTIME))
     {
-        QMessageBox::critical (nullptr, "File Lock Error", "Can not lock the player assignment file. I might be open by another program. Cannot update the player assignment.", QMessageBox::Ok);
+        ShowError("File Lock Error", "Can not lock the player assignment file. I might be open by another program. Cannot update the player assignment.");
         return;
     }
 
@@ -1793,7 +1793,7 @@ void ComDeviceList::LoadPlayersAss()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not open player assignment save data file to read. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not open player assignment save data file to read. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1806,7 +1806,7 @@ void ComDeviceList::LoadPlayersAss()
     if(line != PLAYERSASSIGNMENTS)
     {
         //qDebug() << line;
-        QMessageBox::critical (nullptr, "File Error", "Players Assignment save data file is corrupted. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+        ShowError("File Error", "Players Assignment save data file is corrupted. Please try to reload file, or re-enter the light guns again.");
     }
 
     for(i=0; i < MAXPLAYERLIGHTGUNS; i++)
@@ -1823,7 +1823,7 @@ void ComDeviceList::LoadPlayersAss()
     if(line != ENDOFFILE)
     {
         //qDebug() << line;
-        QMessageBox::critical (nullptr, "File Error", "Players Assignment save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+        ShowError("File Error", "Players Assignment save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.");
     }
 
     //Close the File
@@ -1850,7 +1850,7 @@ void ComDeviceList::SaveSettings()
 
     if(!removedFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not remove old settings save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.", QMessageBox::Ok);
+        ShowError("File Error", "Can not remove old settings save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.");
         return;
     }
 
@@ -1862,7 +1862,7 @@ void ComDeviceList::SaveSettings()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1927,7 +1927,7 @@ void ComDeviceList::LoadSettings()
     //Check if the File Exists, as it might not be created yet. If no File, then exit out of member function
     if(loadSetData.exists() == false)
     {
-        //QMessageBox::critical (nullptr, "File Error", "Can not open COM device save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        //ShowError("File Error", "Can not open COM device save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1939,7 +1939,7 @@ void ComDeviceList::LoadSettings()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1962,7 +1962,7 @@ void ComDeviceList::LoadSettings()
     }
     else
     {
-        QMessageBox::critical (nullptr, "File Error", "Settings save data file is corrupted. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("File Error", "Settings save data file is corrupted. Please close program and solve file problem.");
         return;
     }
 }
@@ -1979,7 +1979,7 @@ void ComDeviceList::LoadSettingsV2()
     //Check if the File Exists, as it might not be created yet. If no File, then exit out of member function
     if(loadSetData.exists() == false)
     {
-        //QMessageBox::critical (nullptr, "File Error", "Can not open COM device save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        //ShowError("File Error", "Can not open COM device save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -1991,7 +1991,7 @@ void ComDeviceList::LoadSettingsV2()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2004,7 +2004,7 @@ void ComDeviceList::LoadSettingsV2()
 
     if(line != STARTSETTINGSFILEV2)
     {
-        QMessageBox::critical (nullptr, "File Error", "Settings save data file is corrupted. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("File Error", "Settings save data file is corrupted. Please close program and solve file problem.");
         return;
     }
 
@@ -2021,7 +2021,7 @@ void ComDeviceList::LoadSettingsV2()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at first setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at first setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2039,7 +2039,7 @@ void ComDeviceList::LoadSettingsV2()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at second setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at second setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2051,7 +2051,7 @@ void ComDeviceList::LoadSettingsV2()
     if(!isNumber)
     {
         refreshTimeDisplay = DEFAULTREFRESHDISPLAY;
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at third setting. Refresh time display is not a number, setting to default.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at third setting. Refresh time display is not a number, setting to default.");
     }
 
     //Next Line is Close COM Port when Game Exits
@@ -2067,7 +2067,7 @@ void ComDeviceList::LoadSettingsV2()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at fourth setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at fourth setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2084,7 +2084,7 @@ void ComDeviceList::LoadSettingsV2()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at fifth setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at fifth setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2101,7 +2101,7 @@ void ComDeviceList::LoadSettingsV2()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at Bypass Serial Port Write Checks. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at Bypass Serial Port Write Checks. Please close program and solve file problem.");
         return;
     }
 
@@ -2118,7 +2118,7 @@ void ComDeviceList::LoadSettingsV2()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at Enable New Game File Creation. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at Enable New Game File Creation. Please close program and solve file problem.");
         return;
     }
 
@@ -2127,7 +2127,7 @@ void ComDeviceList::LoadSettingsV2()
 
     if(!line.startsWith (ENDOFFILE))
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at the end. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at the end. Please close program and solve file problem.");
         return;
     }
 
@@ -2147,7 +2147,7 @@ void ComDeviceList::LoadSettingsV3()
     //Check if the File Exists, as it might not be created yet. If no File, then exit out of member function
     if(loadSetData.exists() == false)
     {
-        //QMessageBox::critical (nullptr, "File Error", "Can not open COM device save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        //ShowError("File Error", "Can not open COM device save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2159,7 +2159,7 @@ void ComDeviceList::LoadSettingsV3()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not create settings save data file. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2172,7 +2172,7 @@ void ComDeviceList::LoadSettingsV3()
 
     if(line != STARTSETTINGSFILEV3)
     {
-        QMessageBox::critical (nullptr, "File Error", "Settings save data file is corrupted. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("File Error", "Settings save data file is corrupted. Please close program and solve file problem.");
         return;
     }
 
@@ -2189,7 +2189,7 @@ void ComDeviceList::LoadSettingsV3()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at first setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at first setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2207,7 +2207,7 @@ void ComDeviceList::LoadSettingsV3()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at second setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at second setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2219,7 +2219,7 @@ void ComDeviceList::LoadSettingsV3()
     if(!isNumber)
     {
         refreshTimeDisplay = DEFAULTREFRESHDISPLAY;
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at third setting. Refresh time display is not a number, setting to default.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at third setting. Refresh time display is not a number, setting to default.");
     }
 
     //Next Line is Close COM Port when Game Exits
@@ -2235,7 +2235,7 @@ void ComDeviceList::LoadSettingsV3()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at fourth setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at fourth setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2252,7 +2252,7 @@ void ComDeviceList::LoadSettingsV3()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at fifth setting. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at fifth setting. Please close program and solve file problem.");
         return;
     }
 
@@ -2269,7 +2269,7 @@ void ComDeviceList::LoadSettingsV3()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at Bypass Serial Port Write Checks. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at Bypass Serial Port Write Checks. Please close program and solve file problem.");
         return;
     }
 
@@ -2286,7 +2286,7 @@ void ComDeviceList::LoadSettingsV3()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at Enable New Game File Creation. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at Enable New Game File Creation. Please close program and solve file problem.");
         return;
     }
 
@@ -2303,7 +2303,7 @@ void ComDeviceList::LoadSettingsV3()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at Bypass Can't Find Light Controller Pop-Up Window. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at Bypass Can't Find Light Controller Pop-Up Window. Please close program and solve file problem.");
         return;
     }
 
@@ -2314,7 +2314,7 @@ void ComDeviceList::LoadSettingsV3()
 
     if(!line.startsWith (ENDOFFILE))
     {
-        QMessageBox::critical (nullptr, "Settings File Error", "Settings save data file is corrupted at the end. Please close program and solve file problem.", QMessageBox::Ok);
+        ShowError("Settings File Error", "Settings save data file is corrupted at the end. Please close program and solve file problem.");
         return;
     }
 
@@ -2341,7 +2341,7 @@ void ComDeviceList::SaveLightControllersList()
 
         if(!removedFile)
         {
-            QMessageBox::critical (nullptr, "File Error", "Can not remove old light controller save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.", QMessageBox::Ok);
+            ShowError("File Error", "Can not remove old light controller save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.");
             return;
         }
 
@@ -2354,7 +2354,7 @@ void ComDeviceList::SaveLightControllersList()
 
     if(!removedFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not remove old light controller save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.", QMessageBox::Ok);
+        ShowError("File Error", "Can not remove old light controller save data file. Failed to remove. Please close program and solve file problem. Might be open or permissions changed.");
         return;
     }
 
@@ -2367,7 +2367,7 @@ void ComDeviceList::SaveLightControllersList()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not create light controller save data file. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not create light controller save data file. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2490,7 +2490,7 @@ void ComDeviceList::LoadLightControllersList()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not open light gun save data file to read. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not open light gun save data file to read. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2512,7 +2512,7 @@ void ComDeviceList::LoadLightControllersList()
     }
     else
     {
-        QMessageBox::critical (nullptr, "Light Gun List File Error", "The first line is not matching what it should be, something got fucked up in the file", QMessageBox::Ok);
+        ShowError("Light Gun List File Error", "The first line is not matching what it should be, something got fucked up in the file");
         return;
     }
 }
@@ -2532,7 +2532,7 @@ void ComDeviceList::LoadLightControllersListV0()
     //Check if the File Exists, as it might not be created yet. If no File, then exit out of member function
     if(loadLCData.exists() == false)
     {
-        //QMessageBox::critical (nullptr, "File Error", "Can not open light gun save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        //ShowError("File Error", "Can not open light gun save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2544,7 +2544,7 @@ void ComDeviceList::LoadLightControllersListV0()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not open light controller save data file to read. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not open light controller save data file to read. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2558,7 +2558,7 @@ void ComDeviceList::LoadLightControllersListV0()
     if(line != STARTLIGHTCNTLRSSAVE)
     {
         //qDebug() << line;
-        QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.", QMessageBox::Ok);
+        ShowError("File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.");
     }
 
     //Next Line is Number of Light Guns
@@ -2576,7 +2576,7 @@ void ComDeviceList::LoadLightControllersListV0()
         if(line != cmpLine)
         {
             //qDebug() << line;
-            QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.", QMessageBox::Ok);
+            ShowError("File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.");
         }
 
         //Next Line is the Light Controller Number
@@ -2634,7 +2634,7 @@ void ComDeviceList::LoadLightControllersListV0()
             lightCntlrNumTest = p_lightCntlrList[i]->GetLightCntlrNumber();
 
             if(lightCntlrNumTest != tempLightCntlrNum)
-                QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+                ShowError("File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light guns again.");
         }
         else
             failedLoad = true;
@@ -2644,7 +2644,7 @@ void ComDeviceList::LoadLightControllersListV0()
     line = in.readLine();
 
     if(line != ENDOFFILE)
-        QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+        ShowError("File Error", "Light controller save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.");
 
     //Close the File
     loadLCData.close();
@@ -2667,7 +2667,7 @@ void ComDeviceList::LoadLightControllersListV1()
     //Check if the File Exists, as it might not be created yet. If no File, then exit out of member function
     if(loadLCData.exists() == false)
     {
-        //QMessageBox::critical (nullptr, "File Error", "Can not open light gun save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        //ShowError("File Error", "Can not open light gun save data file. It does not exists. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2679,7 +2679,7 @@ void ComDeviceList::LoadLightControllersListV1()
 
     if(!openFile)
     {
-        QMessageBox::critical (nullptr, "File Error", "Can not open light controller save data file to read. Please close program and solve file problem. Might be permissions problem.", QMessageBox::Ok);
+        ShowError("File Error", "Can not open light controller save data file to read. Please close program and solve file problem. Might be permissions problem.");
         return;
     }
 
@@ -2693,7 +2693,7 @@ void ComDeviceList::LoadLightControllersListV1()
     if(line != STARTLIGHTCNTLRSSAVE1)
     {
         //qDebug() << line;
-        QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.", QMessageBox::Ok);
+        ShowError("File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.");
     }
 
     //Next Line is Number of Light Guns
@@ -2711,7 +2711,7 @@ void ComDeviceList::LoadLightControllersListV1()
         if(line != cmpLine)
         {
             //qDebug() << line;
-            QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.", QMessageBox::Ok);
+            ShowError("File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light controllers again.");
         }
 
         //Next line is the type of light controller
@@ -2775,7 +2775,7 @@ void ComDeviceList::LoadLightControllersListV1()
                 lightCntlrNumTest = p_lightCntlrList[i]->GetLightCntlrNumber();
 
                 if(lightCntlrNumTest != tempLightCntlrNum)
-                    QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+                    ShowError("File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light guns again.");
             }
             else
                 failedLoad = true;
@@ -2851,7 +2851,7 @@ void ComDeviceList::LoadLightControllersListV1()
             lightCntlrNumTest = p_lightCntlrList[i]->GetLightCntlrNumber();
 
             if(lightCntlrNumTest != tempLightCntlrNum)
-                QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+                ShowError("File Error", "Light controller save data file is corrupted. Please try to reload file, or re-enter the light guns again.");
         }
     }
 
@@ -2859,7 +2859,7 @@ void ComDeviceList::LoadLightControllersListV1()
     line = in.readLine();
 
     if(line != ENDOFFILE)
-        QMessageBox::critical (nullptr, "File Error", "Light controller save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.", QMessageBox::Ok);
+        ShowError("File Error", "Light controller save data file is corrupted. The file did not end correctly. Please try to reload file, or re-enter the light guns again.");
 
     //Close the File
     loadLCData.close();
@@ -3271,8 +3271,14 @@ void ComDeviceList::ErrorMessage(const QString title, const QString message)
     emit ShowErrorMessage(title, message);
 }
 
-
-
+//Error Helper
+void ComDeviceList::ShowError(const QString &title, const QString &message)
+  {
+      if(QApplication::instance())
+          QMessageBox::critical(nullptr, title, message, QMessageBox::Ok);
+      else
+          qCritical() << "[ComDeviceList]" << title << ":" << message;
+  }
 
 
 
