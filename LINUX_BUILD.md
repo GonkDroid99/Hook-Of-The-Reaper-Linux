@@ -156,7 +156,7 @@ Note: This is new and may have issues.
 
 Can also be run via ./HookOfTheReaper --no-ui
 
-If running as a service Binary needs installing /usr/local/bin and the Data files (Data, DefaultLG) to /usr/local/share/hookofthereaper
+If running as a service Binary needs installing ~/.local/bin and the Data files (Data, DefaultLG) to ~/.config/hookofthereaper by default. You can change this in the hookofthereaper.service if you wish
 
 Addding the service and running:
 

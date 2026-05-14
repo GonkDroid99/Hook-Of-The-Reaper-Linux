@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=%i
-ExecStart=/usr/local/bin/HookOfTheReaper --no-ui
-WorkingDirectory=/usr/local/share/hookofthereaper
+ExecStart=~/.local/bin --no-ui
+WorkingDirectory=~/.config/hookofthereaper
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
