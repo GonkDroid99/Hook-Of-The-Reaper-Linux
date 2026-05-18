@@ -558,6 +558,8 @@ void ComDeviceList::DeleteLightGun(quint8 lgNumber)
     }
     else if(lgNumber < numberLightGuns)
     {
+        LightGun *toDelete = p_lightGunList[lgNumber];
+
         //Move Higher Light Guns Down, After the Deleted Targeted Light Gun
         for(index = lgNumber; index < (numberLightGuns-1); index++)
         {
@@ -566,8 +568,8 @@ void ComDeviceList::DeleteLightGun(quint8 lgNumber)
         }
 
         numberLightGuns--;
-        delete p_lightGunList[numberLightGuns];
         p_lightGunList[numberLightGuns] = nullptr;
+        delete toDelete;
 
 
         for(index = 0; index < MAXPLAYERLIGHTGUNS; index++)

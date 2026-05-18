@@ -2159,6 +2159,9 @@ void HookerEngine::OpenSerialPortSlot(quint8 playerNum, bool noInit)
         count++;
     } while(!isLGConnected[playerNum] && count < LGWAITTIME);
 
+//     qDebug() << "OpenSerialPortSlot: isLGConnected=" << isLGConnected[playerNum] << "count="
+//    << count << "playerNum=" << playerNum;
+
     if(!noInit && isLGConnected[playerNum])
     {
         //Get the Commnds for Open COM Port
@@ -2719,7 +2722,8 @@ void HookerEngine::GameStopped()
         {
             //Open INI File to Append
             QFile iniFileTemp(gameINIFilePath);
-            iniFileTemp.open(QIODevice::Append | QIODevice::Text);
+            if (!iniFileTemp.open(QIODevice::Append | QIODevice::Text))
+                return;
             QTextStream out(&iniFileTemp);
 
             for(j = 0; j < foundCount; j++)
@@ -2904,7 +2908,8 @@ void HookerEngine::ClearOnDisconnect()
         {
             //Open INI File to Append
             QFile iniFileTemp(gameINIFilePath);
-            iniFileTemp.open(QIODevice::Append | QIODevice::Text);
+            if (!iniFileTemp.open(QIODevice::Append | QIODevice::Text))
+                return;
             QTextStream out(&iniFileTemp);
 
             for(j = 0; j < foundCount; j++)
@@ -6284,14 +6289,14 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
     bool dlgCMDFound;
     quint8 charToNumber;
 
-    
-   // qDebug() << "[HOTR] ProcessLGCommands:" << signalName << "=" << value;
+
+    // qDebug() << "[HOTR] ProcessLGCommands:" << signalName << "=" << value;
 
     //Get the Player(s) & Command(s) From sinalsAndCommands QMap using signalName
     commands = signalsAndCommands[signalName];
     cmdCount = commands.length ();
 
-   // qDebug() << "[HOTR] ProcessLGCommands commands:" << commands;
+    // qDebug() << "[HOTR] ProcessLGCommands commands:" << commands;
 
     //First Command Is Always a Player
     if(commands[0] == ALLPLAYERS)
