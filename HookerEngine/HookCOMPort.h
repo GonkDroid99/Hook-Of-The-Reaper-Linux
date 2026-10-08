@@ -5,6 +5,8 @@
 #include <QMap>
 #include <QSerialPort>
 #include <QSerialPortInfo>
+#include <QTcpSocket>
+#include <QTimer>
 #include <QDebug>
 
 #include <QByteArray>
@@ -30,13 +32,14 @@ public:
     //Check if USB HID Device is Connected
     bool IsUSBHIDConnected(const quint8 &playerNum) { return playerNum < MAXGAMEPLAYERS && hidOpen[playerNum]; }
 
-    //TCP Server not supported on Linux — always returns false
-    bool IsTCPConnected(quint16 port) { Q_UNUSED(port) return false; }
-    bool IsTCPConnecting(quint16 port) { Q_UNUSED(port) return false; }
+    // TCP output servers (used by Sinden profiles).  HOTR is their client.
+    bool IsTCPConnected(quint16 port) const;
+    bool IsTCPConnecting(quint16 port) const;
 
 public slots:
 
-    //Connect to COM Port (playerNum and comPortPath ignored on Linux — uses QSerialPort by name)
+    //Connect to COM Port. On Linux, prefer the stable configured path
+    //(/dev/serial/by-id or /dev/serial/by-path) over a transient tty name.
     void Connect(const quint8 &playerNum, const quint8 &comPortNum, const QString &comPortName, const qint32 &comPortBaud, const quint8 &comPortData, const quint8 &comPortParity, const quint8 &comPortStop, const quint8 &comPortFlow, const QString &comPortPath, const bool &isWriteOnly);
 
     //Disconnect to COM Port
@@ -60,6 +63,11 @@ public slots:
     //Write Data to USB HID Device
     void WriteDataHID(const quint8 &playerNum, const QByteArray &writeData);
 
+    void ConnectTCP(const quint16 &port, const quint8 &server);
+    void DisconnectTCP();
+    void WriteTCP(const QByteArray &writeData);
+    void WriteTCP1(const QByteArray &writeData);
+
     //Bypass COM port connect-fail warning pop-up (stub for API compatibility)
     void SetBypassCOMPortConnectFailWarning(const bool &bypass) { bypassConnectFailWarning = bypass; }
 
@@ -77,12 +85,39 @@ signals:
     //Light Gun Connected/Disconnected via USB HID
     void LightGunConnected(const quint8 &playerNum);
     void LightGunDisconnected(const quint8 &playerNum);
+    void SerialTransportOpening(const quint8 &playerNum);
+    void SerialTransportRecovering(const quint8 &playerNum);
+    void SerialTransportConnected(const quint8 &playerNum);
+    void SerialTransportDisconnected(const quint8 &playerNum);
 
 private slots:
-
+    void FoundTCPServer();
+    void LostTCPServer();
+    void FoundTCPServer1();
+    void LostTCPServer1();
 
 
 private:
+
+    struct SerialReconnectInfo
+    {
+        bool valid = false;
+        bool recovering = false;
+        quint8 playerNum = 0;
+        QString name;
+        qint32 baud = 0;
+        quint8 data = 0;
+        quint8 parity = 0;
+        quint8 stop = 0;
+        quint8 flow = 0;
+        QString path;
+        QString stablePath;
+        bool writeOnly = false;
+    };
+
+    QString FindStableSerialPath(const QString &deviceName) const;
+    void ScheduleSerialReconnect(quint8 comPortNum);
+    void ReconnectSerial(quint8 comPortNum);
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -97,12 +132,23 @@ private:
 
     //Pointer Array of Serial COM Ports
     QSerialPort                     *p_ComPortArray[MAXCOMPORTS];
+    QTimer                          *p_reconnectTimer[MAXCOMPORTS];
+    SerialReconnectInfo             reconnectInfo[MAXCOMPORTS];
 
     //USB HID Devices (one per player)
     hid_device                      *p_hidConnection[MAXGAMEPLAYERS];
     bool                            hidOpen[MAXGAMEPLAYERS];
 
     bool                            bypassConnectFailWarning;
+
+    quint16                         connectedTCPPort;
+    quint16                         connectedTCPPort1;
+    bool                            isTCPConnected;
+    bool                            isTCPConnecting;
+    bool                            isTCPConnected1;
+    bool                            isTCPConnecting1;
+    QTcpSocket                      *p_tcpServer;
+    QTcpSocket                      *p_tcpServer1;
 
 };
 

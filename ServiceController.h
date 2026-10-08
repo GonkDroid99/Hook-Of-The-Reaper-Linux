@@ -5,6 +5,7 @@
 #include <QSocketNotifier>
 #include "HookerEngine/HookerEngine.h"
 #include "COMDeviceList/ComDeviceList.h"
+#include "HardwareManager/HardwareManager.h"
 
 class ServiceController : public QObject
 {
@@ -24,9 +25,15 @@ class ServiceController : public QObject
       void handleSigInt();
 
     private:
+      // Legacy gun/profile owner used by the game engine.
       ComDeviceList   *p_comDeviceList;
+      // Processes emulator TCP events and translates them to gun commands.
       HookerEngine    *p_hookerEngine;
+      // Discovers physical devices and persists player assignments.
+      HardwareManager *p_hardwareManager;
 
+      // Unix signal file descriptors let Qt handle SIGTERM/SIGINT safely in
+      // the event loop instead of doing shutdown work inside a signal handler.
       QSocketNotifier *p_sigTermNotifier;
       QSocketNotifier *p_sigIntNotifier;
 

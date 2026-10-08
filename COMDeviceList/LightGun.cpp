@@ -46,6 +46,7 @@ LightGun::LightGun(bool lgDefault, quint8 dlgNum, QString lgName, quint8 lgNumbe
     maxDamage = 0;
     doAmmoCheck = false;
     reaperSkipAutoLED = false;
+    timeCrisisMode = false;
 
     tcpPort = 0;
     tcpPlayer = UNASSIGN;
@@ -65,6 +66,7 @@ LightGun::LightGun(bool lgDefault, quint8 dlgNum, QString lgName, quint8 lgNumbe
 
     isUSBLightGun = false;
     isRecoilDelaySet = false;
+    directRecoilIntervalMs = REAPERDIRECTRECOILINTERVAL;
 
 
     //Display Init
@@ -481,6 +483,7 @@ LightGun::LightGun(LightGun const &lgMember, QObject *parent)
 
     isUSBLightGun = lgMember.isUSBLightGun;
     isRecoilDelaySet = lgMember.isRecoilDelaySet;
+    directRecoilIntervalMs = lgMember.directRecoilIntervalMs;
 
     if(isUSBLightGun)
         usbHIDInfo = lgMember.usbHIDInfo;
@@ -1940,8 +1943,23 @@ void LightGun::SetDisplayOpenFire(DisplayOpenFire displayOF)
 
 void LightGun::SetSkipAutoLED()
 {
+    // This flag is meaningful only for RS3 Reapers. Other gun types keep
+    // their normal open-port command list unchanged.
     if(defaultLightGunNum == RS3_REAPER)
+    {
         reaperSkipAutoLED = true;
+        qDebug() << "[HOTR] RS3 auto-LED override ENABLED for gun" << lightGunNum;
+    }
+}
+
+void LightGun::ClearSkipAutoLED()
+{
+    // Reset the per-game override before the next emulator session.
+    if(defaultLightGunNum == RS3_REAPER)
+    {
+        reaperSkipAutoLED = false;
+        qDebug() << "[HOTR] RS3 auto-LED override CLEARED for gun" << lightGunNum;
+    }
 }
 
 
@@ -2178,6 +2196,7 @@ void LightGun::CopyLightGun(LightGun const &lgMember)
 
     isUSBLightGun = lgMember.isUSBLightGun;
     isRecoilDelaySet = lgMember.isRecoilDelaySet;
+    directRecoilIntervalMs = lgMember.directRecoilIntervalMs;
 
     if(isUSBLightGun)
         usbHIDInfo = lgMember.usbHIDInfo;
@@ -2239,6 +2258,8 @@ void LightGun::CopyLightGun(LightGun const &lgMember)
 
     reloadNoRumble = lgMember.reloadNoRumble;
     reloadDisable = lgMember.reloadDisable;
+    timeCrisisMode = lgMember.timeCrisisMode;
+    reaperAmmoLEDMap = lgMember.reaperAmmoLEDMap;
 
     reloadSetting = lgMember.reloadSetting;
     damageSetting = lgMember.damageSetting;
@@ -2366,9 +2387,30 @@ void LightGun::LoadDefaultLGCommands()
 
         //Get Current Path
         //currentPath = QDir::currentPath();
+// Get HOTR data path.
+// HOTR_DATA_DIR is used by Batocera/service installations.
+// Fall back to the normal application-relative data directory.
+    QByteArray hotrDataEnv = qgetenv("HOTR_DATA_DIR");
+
+    if (!hotrDataEnv.isEmpty())
+    {
+        dataPath = QString::fromUtf8(hotrDataEnv);
+    }
+    else
+    {
+    #ifndef Q_OS_WIN
+        QByteArray appImageEnv = qgetenv("APPIMAGE");
+
+        if (!appImageEnv.isEmpty())
+            currentPath = QFileInfo(QString::fromUtf8(appImageEnv)).absolutePath();
+        else
+            currentPath = QApplication::applicationDirPath();
+    #else
         currentPath = QApplication::applicationDirPath();
+    #endif
 
         dataPath = currentPath + "/" + DATAFILEDIR;
+    }
 
         defaultLGFilePath = dataPath + "/" + DEFAULTLGFILENAMES_ARRAY[defaultLightGunNum];
 
@@ -2502,16 +2544,20 @@ void LightGun::LoadDefaultLGCommands()
                     }
                     else if(splitLines[0] == RELOADCMDONLY && loadReloadShake)
                     {
-                        if(defaultLightGunNum == RS3_REAPER && !reaperLoadedReload)
-                        {
-                            reloadCmds << REAPERRELOADCOMMAND;
-                            reaperLoadedReload = true;
-                        }
-
                         for(i = 0; i < numberCommands; i++)
                         {
                             commands[i] = commands[i].trimmed ();
                             reloadCmds << commands[i];
+                        }
+
+                        // A Reaper profile can provide its complete reload sequence
+                        // (normally Z6 followed by ZZ).  Ensure Z6 is present, but do
+                        // not append it again when the profile already supplied it.
+                        if(defaultLightGunNum == RS3_REAPER && !reaperLoadedReload)
+                        {
+                            if(!reloadCmds.contains(REAPERRELOADCOMMAND))
+                                reloadCmds.prepend(REAPERRELOADCOMMAND);
+                            reaperLoadedReload = true;
                         }
                         reloadCmdsSet = true;
                         hasReload = true;
@@ -3024,6 +3070,8 @@ QStringList LightGun::SplitLoadedCommands(QString commandList)
 //Default Light Gun Commands for Certain Signals
 QStringList LightGun::OpenComPortCommands(bool *isSet)
 {
+    // Build startup commands from the profile, then apply the Time Crisis
+    // RS3 override when the current game requires external ammo LED control.
     *isSet = openComPortCmdsSet;
 
     if(defaultLightGunNum == SINDEN)
@@ -3036,6 +3084,15 @@ QStringList LightGun::OpenComPortCommands(bool *isSet)
 
         return tempCMDs;
     }
+    else if(defaultLightGunNum == RS3_REAPER && timeCrisisMode)
+    {
+        // Verified by the direct-serial test. Do not enable auto LEDs or
+        // request rumble when entering an ammo-controlled Time Crisis game.
+        *isSet = true;
+        isReaper5LEDsInited = true;
+        qDebug() << "[HOTR] RS3 Time Crisis startup: ZS Z6";
+        return QStringList{"ZS", "Z6"};
+    }
     else if(reaperSkipAutoLED)
     {
         QStringList tempCMDs;
@@ -3046,15 +3103,51 @@ QStringList LightGun::OpenComPortCommands(bool *isSet)
                 tempCMDs << openComPortCmds[i];
         }
 
+        // ZR can remain latched by the RS3 firmware after a previous game.
+        // ZS enters external control but does not explicitly reset that state.
+        // Leave auto-LED mode first, then enter external control again so the
+        // Time Crisis ammo Z1-Z5 commands control the LEDs themselves.
+        tempCMDs.prepend("ZX");
+
+        qDebug() << "[HOTR] RS3 Open_COM filtered: before=" << openComPortCmds
+                 << "after=" << tempCMDs;
+
         return tempCMDs;
     }
+
+    if(defaultLightGunNum == RS3_REAPER)
+        qDebug() << "[HOTR] RS3 Open_COM unfiltered:" << openComPortCmds;
 
     return openComPortCmds;
 }
 
+void LightGun::UpdateSerialPortPath(const QString &path, const QString &persistentPath)
+{
+    // The manager calls this after a reconnect. comPortInfo uses the live
+    // device path for opening, while comPortString stores the stable path for
+    // the next save/reload cycle.
+    if(path.isEmpty() || isUSBLightGun)
+        return;
+
+    comPortInfo = QSerialPortInfo(path);
+    if(!persistentPath.isEmpty())
+        comPortString = persistentPath;
+    else
+        comPortString = path;
+    FillSerialPortInfo();
+}
+
 QStringList LightGun::CloseComPortCommands(bool *isSet)
 {
+    // Time Crisis needs a safe RS3 exit sequence before normal profile close
+    // commands are considered.
     *isSet = closeComPortCmdsSet;
+
+    // Return the Reaper to its normal slide position before leaving external
+    // control. ZZ is rumble and must not be used as a game-exit command.
+    if(defaultLightGunNum == RS3_REAPER && timeCrisisMode)
+        return QStringList{"Z6", "ZX"};
+
     return closeComPortCmds;
 }
 
@@ -3097,7 +3190,21 @@ QStringList LightGun::RecoilValueCommands(bool *isSet, quint16 recoilValue)
 
 QStringList LightGun::ReloadCommands(bool *isSet)
 {
+    // A normal RS3 reload includes ZZ rumble. Time Crisis uses the same input
+    // as cover/reload, so suppress only that rumble command in that mode.
     *isSet = reloadCmdsSet;
+
+    // Time Crisis uses the RS3 reload/cover input, but the Reaper's ZZ
+    // command is an explicit rumble.  Keep the normal Z6 ZZ behavior for
+    // every other game and suppress only the rumble while Time Crisis is
+    // active.
+    if(timeCrisisMode && defaultLightGunNum == RS3_REAPER)
+    {
+        QStringList commands = reloadCmds;
+        commands.removeAll("ZZ");
+        return commands;
+    }
+
     return reloadCmds;
 }
 
@@ -3113,7 +3220,7 @@ QStringList LightGun::ReloadValueCommands(bool *isSet, quint16 ammoValue)
 
     *isSet = reloadCmdsSet;
     lastAmmoValue = ammoValue;   
-    return reloadCmds;
+    return ReloadCommands(isSet);
 }
 
 
@@ -3334,6 +3441,8 @@ QStringList LightGun::DeathValueCommands(bool *isSet, quint8 deathValue)
 
 void LightGun::ResetLightGun()
 {
+    // Clear all per-game counters, overrides, and display state while keeping
+    // the persistent hardware/profile configuration intact.
     lastAmmoValue = 0;
     ammoCheckValue = 1;
     lastLifeValue = 0;
@@ -3343,6 +3452,7 @@ void LightGun::ResetLightGun()
     maxDamage = 0;
     doAmmoCheck = false;
     reaperSkipAutoLED = false;
+    reaperAmmoLEDMap.clear();
     hasDisplayAmmoInited = false;
     hasDisplayLifeInited = false;
     hasDisplayOtherInited = false;
@@ -3500,6 +3610,7 @@ void LightGun::AmmoValueNormal(quint16 ammoValue)
         tempEnableCommands = false;
         return;
     }
+
     //Check if Reload Happened
     else if(ammoValue > lastAmmoValue)
     {
@@ -3560,9 +3671,11 @@ void LightGun::AmmoValueReaper(quint16 ammoValue)
         tempEnableCommands = false;
         return;
     }
+
     //Check if Reload Happened
     else if(ammoValue > lastAmmoValue)
     {
+        qDebug() << "[HOTR] RS3 ammo value=" << ammoValue << "previous=" << lastAmmoValue;
         lastAmmoValue = ammoValue;
         tempEnableCommands = reloadCmdsSet;
         reloadAmmoValue = ammoValue;
@@ -3593,13 +3706,13 @@ void LightGun::AmmoValueReaper(quint16 ammoValue)
             if(!isReaper5LEDsInited)
             {
                 isReaper5LEDsInited = true;
-                tempCommands = reloadCmds;
+                tempCommands = ReloadCommands(&tempEnableCommands);
                 tempCommands.prepend(REAPERINITLEDS);
                 return;
             }
         }
 
-        tempCommands = reloadCmds;
+        tempCommands = ReloadCommands(&tempEnableCommands);
         return;
     }
     else if((lastAmmoValue == 0 && ammoValue == 0) || (lastAmmoValue > ammoCheckValue && ammoValue == 0)) //Boot Up or Closing Game, Do Nothing
@@ -3614,7 +3727,7 @@ void LightGun::AmmoValueReaper(quint16 ammoValue)
         //If not equal, then do reload. In Slow Mode, ammoCheckValue is 2, all other times it is 1
         lastAmmoValue = ammoValue;
         tempEnableCommands = reloadCmdsSet;
-        tempCommands = reloadCmds;
+        tempCommands = ReloadCommands(&tempEnableCommands);
         return;
     }
 
@@ -3669,8 +3782,12 @@ void LightGun::AmmoValueReaper(quint16 ammoValue)
         }
         else
         {
-            if(ammoValue > maxAmmo) //If ammoValue is higher than maxAmmo, then = to maxValue
-                tempAV = maxAmmo;
+            // A game profile can map its real magazine values onto the five
+            // RS3 LED states. Unmapped games retain the normal 0-5 clamp.
+            if(reaperAmmoLEDMap.contains(ammoValue))
+                tempAV = reaperAmmoLEDMap.value(ammoValue);
+            else if(ammoValue > REAPERMAXAMMONUM)
+                tempAV = REAPERMAXAMMONUM;
             else
                 tempAV = ammoValue;
         }
@@ -3688,6 +3805,7 @@ void LightGun::AmmoValueReaper(quint16 ammoValue)
         }
     }
 
+    qDebug() << "[HOTR] RS3 ammo value=" << ammoValue << "commands=" << tempCommands;
     lastAmmoValue = ammoValue;
 
     return;

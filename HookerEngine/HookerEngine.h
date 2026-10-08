@@ -34,6 +34,7 @@
 #endif
 
 #include "../COMDeviceList/ComDeviceList.h"
+#include "../HardwareManager/HardwareManager.h"
 
 class HookerEngine : public QObject
 {
@@ -45,9 +46,16 @@ class HookerEngine : public QObject
     QThread* p_threadForLight;
 
 public:
-    explicit HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiConnect, QObject *parent = nullptr);
+    // HookerEngine owns game communication and legacy LightGun behavior.
+    // HardwareManager is optional so older callers can still construct the
+    // engine without automatic discovery.
+    explicit HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiConnect,
+                          HardwareManager *hardwareManager = nullptr, QObject *parent = nullptr);
     //HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiConnect, QObject *parent = nullptr);
     ~HookerEngine();
+    // Apply all currently present manager devices to the legacy gun list.
+    // Creation is deferred while a game is active.
+    void SynchronizeHardwareDevices();
 
     //Start & Stop the Hooker Engine
     void Start();
@@ -185,6 +193,9 @@ private slots:
     void PXCloseSolenoid(quint8 player);
     void PXRecoilDelay(quint8 player);
 
+    // Independent limiter for direct >Recoil commands.
+    void PXDirectRecoilIntervalTimeout(quint8 player);
+
     //Serial Port Connection Open/Close/Write Slots
     void OpenSerialPortSlot(quint8 playerNum, bool noInit);
     void CloseSerialPortSlot(quint8 playerNum, bool noInit, bool initOnly);
@@ -227,6 +238,10 @@ private slots:
     //Light Gun has Disconnected from it's Output Interface
     void DisconnectedLightGun(const quint8 lgNum);
 
+    // Shared handler for newly discovered and reconnected hardware.
+    void HardwareDeviceRecovered(const HardwareDevice &device);
+
+
 
 
 private:
@@ -234,6 +249,9 @@ private:
 
     //Clears Things out on a TCP Diconnect, if a Game has Run
     void ClearOnDisconnect();
+
+    bool QueueDirectRecoil(quint8 player, const QStringList &commands);
+    void WriteLGCommandList(quint8 player, QStringList commands);
 
     //Game Found, Starts things Off
     void GameFound();
@@ -333,12 +351,15 @@ private:
 
 
 
+
     ///////////////////////////////////////////////////////////////////////////
     //Variables Start - End of Member Functions
     ///////////////////////////////////////////////////////////////////////////
 
     //ComDeviceList to Add the Light Gun Too. Do Not Delete!
     ComDeviceList                   *p_comDeviceList;
+    // Non-owning pointer; the GUI or ServiceController owns this object.
+    HardwareManager                 *p_hardwareManager;
 
     //TCP Socket that Connects to MAME and Demulshooter
     HookTCPSocket                   *p_hookSocket;
@@ -618,6 +639,16 @@ private:
     bool                            isRecoilDelaySet[MAXGAMEPLAYERS];
     bool                            blockRecoil[MAXGAMEPLAYERS];
     bool                            doRecoilDelayEnds[MAXGAMEPLAYERS];
+
+    // Per-player direct recoil pacing. This is deliberately separate from
+    // the legacy USB recoil/solenoid timer above.
+    // There are eight assignable gun slots. Only the slots used by the
+    // current game's P1-P4 signals receive events, but keeping the limiter
+    // per assignable slot avoids baking the four-player game limit into the
+    // gun pacing state.
+    QTimer                          directRecoilIntervalTimer[MAXPLAYERLIGHTGUNS];
+    quint16                         directRecoilIntervalMs[MAXPLAYERLIGHTGUNS];
+    QStringList                     pendingDirectRecoilCommands[MAXPLAYERLIGHTGUNS];
 
     ///////////////////////////////////////////////////////////////////////////
 

@@ -1,6 +1,7 @@
 #include "editLightGunWindowV2.h"
 #include "Windows/ui_editLightGunWindowV2.h"
 #include "../Global.h"
+#include <QIntValidator>
 #ifndef Q_OS_WIN
 #include <QDir>
 #include <QFileInfo>
@@ -21,6 +22,7 @@ editLightGunWindowV2::editLightGunWindowV2(ComDeviceList *cdList, QWidget *paren
 
     //Setup the Window Functions, like Combo Box
     ui->setupUi(this);
+    ui->recoilIntervalLineEdit->setValidator(new QIntValidator(0, DIRECTRECOILINTERVALMAX, ui->recoilIntervalLineEdit));
 
     //Fixes the Size of the Window, so it Cannot Be Expanded
     this->setFixedSize(this->size());
@@ -1737,6 +1739,8 @@ void editLightGunWindowV2::EditLightGun()
 
     //Set the General Light Gun Settings, as they will Reload the Commands
     p_comDeviceList->p_lightGunList[lightGunNum]->SetLightGunSettings (lgSet);
+    p_comDeviceList->p_lightGunList[lightGunNum]->SetDirectRecoilInterval(
+        ui->recoilIntervalLineEdit->text().toUShort());
 
 }
 
@@ -1911,6 +1915,8 @@ void editLightGunWindowV2::LoadSavedLightGun(quint8 index)
     ui->tcpRecoilVoltComboBox->setEnabled (false);
 
     outputConnection = p_comDeviceList->p_lightGunList[index]->GetOutputConnection();
+    ui->recoilIntervalLineEdit->setText(QString::number(
+        p_comDeviceList->p_lightGunList[index]->GetDirectRecoilInterval()));
 
     //Check if the Light Gun is a Default Light Gun
     if(defaultLightGun)
@@ -2957,4 +2963,3 @@ void editLightGunWindowV2::on_openFireNoDisplayCheckBox_checkStateChanged(const 
         ui->openFireNumberRadioButton->setStyleSheet("QRadioButton { color: red; }");
     }
 }
-

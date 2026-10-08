@@ -81,19 +81,7 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 echo "      Done."
 
-# --- Copy data directory next to the binary ---
-echo "[5/5] Copying data/ directory to build/..."
-if [ ! -d "$SCRIPT_DIR/build" ]; then
-    echo "      WARNING: build/ directory not found. Build the project first, then re-run this step:"
-    echo "        cp -r \"$SCRIPT_DIR/data\" \"$SCRIPT_DIR/build/data\""
-else
-    cp -r "$SCRIPT_DIR/data" "$SCRIPT_DIR/build/data"
-    echo "      Done. Copied to $SCRIPT_DIR/build/data"
-fi
 
 echo ""
 echo "=== Setup complete ==="
 echo "Retro Shooter 2 guns appear automatically in the HOTR port dropdown when plugged in."
-echo "HOTR shows /dev/serial/by-path/ entries (stable per USB port) — plug P1 and P2 into"
-echo "the same USB ports each session and HOTR will find them consistently, no extra setup."
-echo "Note: serial port access requires a new login session to take effect."

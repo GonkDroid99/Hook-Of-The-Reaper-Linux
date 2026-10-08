@@ -8,8 +8,22 @@
 #define p_comPortHandler p_hookComPort
 #endif
 
+// The PS2 Time Crisis games use the Reaper's ammo LED commands, but their
+// reload/cover controls conflict with the Reaper LED auto-control mode. Keep
+// the shared RS3 profile unchanged and disable that mode only for these game
+// serials, covering the supported PAL and NTSC regions.
+static bool IsTimeCrisisPS2Game(const QString &serial)
+{
+    // These serials identify the supported PAL/NTSC PS2 Time Crisis games.
+    // They share RS3 hardware but need different game-event handling.
+    return serial == "SCES-50300" || serial == "SLUS-20219" || // Time Crisis 2
+           serial == "SCES-51844" || serial == "SLUS-20645" || // Time Crisis 3
+           serial == "SCES-52530" || serial == "SLUS-20927";   // Crisis Zone
+}
+
 //Constructor
-HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiConnect, QObject *parent)
+HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiConnect,
+                           HardwareManager *hardwareManager, QObject *parent)
    : QObject{parent}
 {
     //Used IN TCP Socket
@@ -70,6 +84,16 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
 
     //Move Over the ComDevice List
     p_comDeviceList = cdList;
+    p_hardwareManager = hardwareManager;
+    if(p_hardwareManager)
+    {
+        // The manager reports physical discovery; the engine converts those
+        // events into legacy LightGun profiles and player assignments.
+        connect(p_hardwareManager, &HardwareManager::deviceConnected,
+                this, &HookerEngine::HardwareDeviceRecovered);
+        connect(p_hardwareManager, &HardwareManager::deviceRecovered,
+                this, &HookerEngine::HardwareDeviceRecovered);
+    }
 
     //Get Number of Light Controllers
     numberLightCntlrs = p_comDeviceList->GetNumberLightControllers ();
@@ -83,13 +107,24 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
     //currentPath = QDir::currentPath();
 #ifndef Q_OS_WIN
     {
-        QByteArray appImageEnv = qgetenv("APPIMAGE");
-        if (!appImageEnv.isEmpty())
-            currentPath = QFileInfo(QString::fromUtf8(appImageEnv)).absolutePath();
+        QByteArray hotrDataEnv = qgetenv("HOTR_DATA_DIR");
+
+        if (!hotrDataEnv.isEmpty())
+        {
+            currentPath = QFileInfo(QString::fromUtf8(hotrDataEnv)).absolutePath();
+        }
         else
-            currentPath = QApplication::applicationDirPath();
-        if (!QFileInfo(currentPath).isWritable())
-            currentPath = QDir::homePath() + "/.HookOfTheReaper";
+        {
+            QByteArray appImageEnv = qgetenv("APPIMAGE");
+
+            if (!appImageEnv.isEmpty())
+                currentPath = QFileInfo(QString::fromUtf8(appImageEnv)).absolutePath();
+            else
+                currentPath = QApplication::applicationDirPath();
+
+            if (!QFileInfo(currentPath).isWritable())
+                currentPath = QDir::homePath() + "/.HookOfTheReaper";
+        }
     }
 #else
     currentPath = QApplication::applicationDirPath();
@@ -303,11 +338,34 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
     connect(this, &HookerEngine::SetComPortBypassWriteChecks, p_hookComPort, &HookCOMPort::SetBypassSerialWriteChecks);
     connect(this, &HookerEngine::SetBypassComPortConnectFailWarning, p_hookComPort, &HookCOMPort::SetBypassCOMPortConnectFailWarning);
 
+    // TCP output clients for Sinden profiles.
+    connect(this, &HookerEngine::ConnectTCPServer, p_hookComPort, &HookCOMPort::ConnectTCP);
+    connect(this, &HookerEngine::DisconnectTCPServer, p_hookComPort, &HookCOMPort::DisconnectTCP);
+    connect(this, &HookerEngine::WriteTCPServer, p_hookComPort, &HookCOMPort::WriteTCP);
+    connect(this, &HookerEngine::WriteTCPServer1, p_hookComPort, &HookCOMPort::WriteTCP1);
+
     //Light Gun Connected/Disconnected events
     connect(p_hookComPort, &HookCOMPort::LightGunConnected, this, &HookerEngine::ConnectedLightGun);
     connect(p_hookComPort, &HookCOMPort::LightGunDisconnected, this, &HookerEngine::DisconnectedLightGun);
-
-    //TCP Server (Sinden) not yet supported on Linux
+    if(p_hardwareManager)
+    {
+        connect(p_hookComPort, &HookCOMPort::SerialTransportOpening, this,
+                [this](quint8 player) {
+                    p_hardwareManager->markPlayerTransportOpening(player + 1);
+                });
+        connect(p_hookComPort, &HookCOMPort::SerialTransportRecovering, this,
+                [this](quint8 player) {
+                    p_hardwareManager->markPlayerTransportRecovering(player + 1);
+                });
+        connect(p_hookComPort, &HookCOMPort::SerialTransportConnected, this,
+                [this](quint8 player) {
+                    p_hardwareManager->markPlayerTransportConnected(player + 1);
+                });
+        connect(p_hookComPort, &HookCOMPort::SerialTransportDisconnected, this,
+                [this](quint8 player) {
+                    p_hardwareManager->markPlayerTransportDisconnected(player + 1);
+                });
+    }
 
 #endif
 
@@ -336,6 +394,12 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
     connect(&openSolenoidOrRecoilDelay[1], SIGNAL(timeout()), this, SLOT(P2CloseSolenoidOrRecoilDelay()));
     connect(&openSolenoidOrRecoilDelay[2], SIGNAL(timeout()), this, SLOT(P3CloseSolenoidOrRecoilDelay()));
     connect(&openSolenoidOrRecoilDelay[3], SIGNAL(timeout()), this, SLOT(P4CloseSolenoidOrRecoilDelay()));
+
+    for(quint8 i = 0; i < MAXPLAYERLIGHTGUNS; ++i)
+    {
+        connect(&directRecoilIntervalTimer[i], &QTimer::timeout, this,
+                [this, i]() { PXDirectRecoilIntervalTimeout(i); });
+    }
 
 
 
@@ -374,6 +438,14 @@ HookerEngine::HookerEngine(ComDeviceList *cdList, bool displayGUI, QWidget *guiC
         isLGConnected[i] = false;
         QString tempR2S = "P"+QString::number(i+1)+INTERNALRECOILR2S;
         recoilR2SInternalSignalName.insert(i,tempR2S);
+    }
+
+    for(quint8 i = 0; i < MAXPLAYERLIGHTGUNS; ++i)
+    {
+        directRecoilIntervalMs[i] = 0;
+        directRecoilIntervalTimer[i].setSingleShot(true);
+        directRecoilIntervalTimer[i].setTimerType(Qt::PreciseTimer);
+        pendingDirectRecoilCommands[i].clear();
     }
 
     //Status of the LG TCP Server
@@ -436,6 +508,8 @@ void HookerEngine::HookerEngine::Start()
     SetUpLightGuns();
 
     isEngineStarted = true;
+    if(p_hardwareManager)
+        p_hardwareManager->setGameActive(false);
 
     //Start the TCP Connection
     emit StartTCPSocket();
@@ -444,6 +518,8 @@ void HookerEngine::HookerEngine::Start()
 void HookerEngine::HookerEngine::Stop()
 {
     isEngineStarted = false;
+    if(p_hardwareManager)
+        p_hardwareManager->setGameActive(false);
 
     if(p_refreshDisplayTimer->isActive ())
         p_refreshDisplayTimer->stop ();
@@ -1838,6 +1914,8 @@ void HookerEngine::WriteLGComPortSlot(quint8 cpNum, QString cpData)
 {
     QByteArray cpBA = cpData.toUtf8 ();
 
+    qDebug() << "[HOTR] Serial TX direct port=" << cpNum << "data=" << cpData;
+
     //qDebug() << "COM Port: " << cpNum << " Data: " << cpData;
 
     //Send Data to COM Port
@@ -2113,6 +2191,58 @@ void HookerEngine::PXRecoilDelay(quint8 player)
         blockRecoil[player] = false;
 }
 
+bool HookerEngine::QueueDirectRecoil(quint8 player, const QStringList &commands)
+{
+    if(player >= MAXPLAYERLIGHTGUNS)
+        return false;
+
+    if(directRecoilIntervalMs[player] == 0)
+        return false;
+
+    if(!directRecoilIntervalTimer[player].isActive())
+    {
+        directRecoilIntervalTimer[player].start(directRecoilIntervalMs[player]);
+        return false;
+    }
+
+    // Repeated shots during the interval collapse into one pending recoil.
+    pendingDirectRecoilCommands[player] = commands;
+    return true;
+}
+
+void HookerEngine::PXDirectRecoilIntervalTimeout(quint8 player)
+{
+    if(player >= MAXPLAYERLIGHTGUNS || directRecoilIntervalMs[player] == 0)
+    {
+        if(player < MAXPLAYERLIGHTGUNS)
+            pendingDirectRecoilCommands[player].clear();
+        return;
+    }
+
+    if(pendingDirectRecoilCommands[player].isEmpty())
+        return;
+
+    QStringList commands = pendingDirectRecoilCommands[player];
+    pendingDirectRecoilCommands[player].clear();
+
+    WriteLGCommandList(player, commands);
+    directRecoilIntervalTimer[player].start(directRecoilIntervalMs[player]);
+}
+
+void HookerEngine::WriteLGCommandList(quint8 player, QStringList commands)
+{
+    for(QString &command : commands)
+    {
+        if(command.size() >= 2 && command[0] == DELAYCMD0 && command[1] == DELAYCMD1)
+        {
+            command.remove(0, 2);
+            QThread::msleep(command.toUInt());
+        }
+        else
+            lgGamePlayers[player].Write(command);
+    }
+}
+
 
 void HookerEngine::OpenSerialPortSlot(quint8 playerNum, bool noInit)
 {
@@ -2172,56 +2302,160 @@ void HookerEngine::OpenSerialPortSlot(quint8 playerNum, bool noInit)
         //Write Commands to the COM Port
         if(isCommands)
         {
+            const bool paceReaperTimeCrisis =
+                IsTimeCrisisPS2Game(gameName) &&
+                p_comDeviceList->p_lightGunList[lightGun]->GetDefaultLightGunNumber() == RS3_REAPER;
+
             for(j = 0; j < commands.count(); j++)
             {
                 cpBA = commands[j].toUtf8 ();
-                emit WriteComPortSig(tempCPNum, cpBA);
+                if(paceReaperTimeCrisis && j > 0)
+                {
+                    const QByteArray delayedCommand = cpBA;
+                    const quint8 delayedPort = tempCPNum;
+                    const int delayMs = j * 100;
+                    qDebug() << "[HOTR] RS3 startup command scheduled"
+                             << delayedCommand << "delayMs=" << delayMs;
+                    QTimer::singleShot(delayMs, this, [this, delayedPort, delayedCommand]() {
+                        emit WriteComPortSig(delayedPort, delayedCommand);
+                    });
+                }
+                else
+                {
+                    emit WriteComPortSig(tempCPNum, cpBA);
+                }
             }
         }
     }
 }
 
 
+// void HookerEngine::CloseSerialPortSlot(quint8 playerNum, bool noInit, bool initOnly)
+// {
+//     quint8 j, lightGun, lgDefaultLGNum;
+//     quint8 tempCPNum;
+//     QStringList commands;
+//     QByteArray cpBA;
+//     bool isCommands;
+
+//     //Get Light Gun Number
+//     lightGun = loadedLGNumbers[playerNum];
+
+//     //Get COM Port For Light Gun
+//     tempCPNum = loadedLGComPortNumber[playerNum];
+
+//     lgDefaultLGNum = p_comDeviceList->p_lightGunList[lightGun]->GetDefaultLightGunNumber();
+
+//     if(!noInit || initOnly)
+//     {
+//         //Get Close COM Port Commands for Light Gun
+//         commands = p_comDeviceList->p_lightGunList[lightGun]->CloseComPortCommands(&isCommands);
+
+//         //Write Commnds to COM Port
+//         if(isCommands)
+//         {
+//             for(j = 0; j < commands.count(); j++)
+//             {
+//                 cpBA = commands[j].toUtf8 ();
+//                 emit WriteComPortSig(tempCPNum, cpBA);
+//             }
+//         }
+//     }
+
+//     //Closes The COM Port
+//     if(closeComPortGameExit && !initOnly)
+//     {
+//         //Send 'E' to Cut off Serial Port
+//         if(lgDefaultLGNum == OPENFIRE)
+//         {
+//             QString ofEnd = OPENFIREENDCOM;
+//             cpBA = ofEnd.toUtf8 ();
+//             emit WriteComPortSig(tempCPNum, cpBA);
+//         }
+
+//         emit StopComPort(playerNum, tempCPNum);
+//     }
+
+//     lgConnectionClosed[playerNum] = true;
+// }
+
+//close serial port fix
 void HookerEngine::CloseSerialPortSlot(quint8 playerNum, bool noInit, bool initOnly)
 {
     quint8 j, lightGun, lgDefaultLGNum;
     quint8 tempCPNum;
     QStringList commands;
     QByteArray cpBA;
-    bool isCommands;
+    bool isCommands = false;
 
-    //Get Light Gun Number
+    // Get Light Gun Number
     lightGun = loadedLGNumbers[playerNum];
 
-    //Get COM Port For Light Gun
+    // Get COM Port For Light Gun
     tempCPNum = loadedLGComPortNumber[playerNum];
 
-    lgDefaultLGNum = p_comDeviceList->p_lightGunList[lightGun]->GetDefaultLightGunNumber();
+    lgDefaultLGNum =
+        p_comDeviceList->p_lightGunList[lightGun]->GetDefaultLightGunNumber();
+
+    const bool paceReaperTimeCrisis =
+        IsTimeCrisisPS2Game(gameName) && lgDefaultLGNum == RS3_REAPER;
 
     if(!noInit || initOnly)
     {
-        //Get Close COM Port Commands for Light Gun
-        commands = p_comDeviceList->p_lightGunList[lightGun]->CloseComPortCommands(&isCommands);
+        // Get Close COM Port Commands for Light Gun
+        commands =
+            p_comDeviceList->p_lightGunList[lightGun]
+                ->CloseComPortCommands(&isCommands);
 
-        //Write Commnds to COM Port
-        if(isCommands)
+        // Write Commands to COM Port
+        if (isCommands)
         {
-            for(j = 0; j < commands.count(); j++)
+            for (j = 0; j < commands.count(); j++)
             {
-                cpBA = commands[j].toUtf8 ();
-                emit WriteComPortSig(tempCPNum, cpBA);
+                cpBA = commands[j].toUtf8();
+                if(paceReaperTimeCrisis && j > 0)
+                {
+                    const QByteArray delayedCommand = cpBA;
+                    const quint8 delayedPort = tempCPNum;
+                    const int delayMs = j * 100;
+                    qDebug() << "[HOTR] RS3 shutdown command scheduled"
+                             << delayedCommand << "delayMs=" << delayMs;
+                    QTimer::singleShot(delayMs, this, [this, delayedPort, delayedCommand]() {
+                        emit WriteComPortSig(delayedPort, delayedCommand);
+                    });
+                }
+                else
+                {
+                    emit WriteComPortSig(tempCPNum, cpBA);
+                }
             }
         }
     }
 
-    //Closes The COM Port
-    if(closeComPortGameExit && !initOnly)
+    // The Reaper needs Z6 and ZX delivered separately. Keep the port open
+    // until the delayed ZX has been sent; otherwise the old InitOnly/NoInit
+    // profile pattern can close it before either command reaches the gun.
+    if(paceReaperTimeCrisis)
     {
-        //Send 'E' to Cut off Serial Port
-        if(lgDefaultLGNum == OPENFIRE)
+        if(!initOnly && !noInit && closeComPortGameExit)
+        {
+            const quint8 delayedPlayer = playerNum;
+            const quint8 delayedPort = tempCPNum;
+            QTimer::singleShot((commands.count() * 100) + 50, this, [this, delayedPlayer, delayedPort]() {
+                emit StopComPort(delayedPlayer, delayedPort);
+            });
+        }
+        lgConnectionClosed[playerNum] = true;
+        return;
+    }
+
+    // Close the COM port unless this is InitOnly
+    if (closeComPortGameExit && !initOnly)
+    {
+        if (lgDefaultLGNum == OPENFIRE)
         {
             QString ofEnd = OPENFIREENDCOM;
-            cpBA = ofEnd.toUtf8 ();
+            cpBA = ofEnd.toUtf8();
             emit WriteComPortSig(tempCPNum, cpBA);
         }
 
@@ -2235,7 +2469,7 @@ void HookerEngine::WriteSerialPortSlot(quint8 cpNum, QString cpData)
 {
     QByteArray cpBA = cpData.toUtf8 ();
 
-    //qDebug() << "COM Port: " << cpNum << " Data: " << cpData;
+    qDebug() << "[HOTR] Serial TX port=" << cpNum << "data=" << cpData;
 
     //Send Data to COM Port
     emit WriteComPortSig(cpNum, cpBA);
@@ -2590,11 +2824,41 @@ void HookerEngine::ProcessFilterTCPData(const QString &signal, const QString &da
 
 void HookerEngine::GameStart(const QString &data)
 {
+    // GameStart is the boundary after which new profiles must not be created:
+    // the emulator has already opened its input configuration.
     gameName = data;
+
+    qDebug() << "[HOTR] GameStart game=" << gameName
+             << "timeCrisisMatch=" << IsTimeCrisisPS2Game(gameName)
+             << "lightGuns=" << p_comDeviceList->GetNumberLightGuns();
+
+    // Reset the per-game RS3 mode before the game profile opens the guns.
+    // Time Crisis uses explicit ammo commands, so its startup enters external
+    // control without ZR and spaces the RS3 initialization commands.
+    for(quint8 k = 0; k < p_comDeviceList->GetNumberLightGuns(); k++)
+    {
+        p_comDeviceList->p_lightGunList[k]->ClearSkipAutoLED();
+        p_comDeviceList->p_lightGunList[k]->SetTimeCrisisMode(false);
+    }
+
+    if(IsTimeCrisisPS2Game(gameName))
+    {
+        for(quint8 k = 0; k < p_comDeviceList->GetNumberLightGuns(); k++)
+        {
+            p_comDeviceList->p_lightGunList[k]->SetSkipAutoLED();
+            p_comDeviceList->p_lightGunList[k]->SetTimeCrisisMode(true);
+        }
+    }
 
     isGameFound = true;
     gameHasRun = true;
     isEmptyGame = false;
+    if(p_hardwareManager)
+    {
+        // Existing guns continue to work, but profile creation is deferred
+        // until GameStopped.
+        p_hardwareManager->setGameActive(true);
+    }
 
     //Re-Load and Update Player Assignment
     LoadUpdatePlayerAssignment();
@@ -2615,14 +2879,19 @@ void HookerEngine::GameStart(const QString &data)
 
 void HookerEngine::GameStartEmpty()
 {
+    // No emulator is using the guns, so automatic configuration is allowed.
     emit MameConnectedNoGame();
     isEmptyGame = true;
+    if(p_hardwareManager)
+        p_hardwareManager->setGameActive(false);
 }
 
 
 
 void HookerEngine::GameStopped()
 {
+    // Once the emulator closes, apply devices that were discovered while the
+    // game was active and were therefore waiting for a safe synchronization.
     //qDebug() << "GameStopped in Hooker Engine";
 
     quint8 j;
@@ -2643,6 +2912,8 @@ void HookerEngine::GameStopped()
     //Game Has Stopped
     isGameFound = false;
     isEmptyGame = false;
+    if(p_hardwareManager)
+        p_hardwareManager->setGameActive(false);
 
     //qDebug() << "Game Has Stopped!!!!!!!!!!!";
 
@@ -2778,6 +3049,17 @@ void HookerEngine::GameStopped()
         lgTCPPort[i] = 0;
         lgTCPPlayer[i] = UNASSIGN;
     }
+
+    for(quint8 i = 0; i < MAXPLAYERLIGHTGUNS; ++i)
+    {
+        directRecoilIntervalTimer[i].stop();
+        pendingDirectRecoilCommands[i].clear();
+    }
+
+    // A gun inserted while the emulator was running may have been detected
+    // but deliberately not added to the legacy profile list.  The emulator
+    // is now stopped, so apply any pending manager devices for the next game.
+    SynchronizeHardwareDevices();
 }
 
 
@@ -2789,14 +3071,89 @@ void HookerEngine::PreINICommandProcess(const QString &signal, const QString &da
 
 void HookerEngine::ConnectedLightGun(const quint8 lgNum)
 {
+    if(lgNum >= MAXGAMEPLAYERS)
+        return;
+
     isLGConnected[lgNum] = true;
-    //qDebug() << "Light Gun:" << lgNum << "Has been Connected";
+    qDebug() << "[HOTR] Light gun transport connected player=" << (lgNum + 1);
 }
 
 void HookerEngine::DisconnectedLightGun(const quint8 lgNum)
 {
+    if(lgNum >= MAXGAMEPLAYERS)
+        return;
+
     isLGConnected[lgNum] = false;
-    //qDebug() << "Light Gun:" << lgNum << "Has been Disconnected";
+    qDebug() << "[HOTR] Light gun transport disconnected player=" << (lgNum + 1);
+}
+
+void HookerEngine::HardwareDeviceRecovered(const HardwareDevice &device)
+{
+    // The manager has already identified this physical device. The engine
+    // now projects it into the legacy LightGun list used by game commands.
+    qInfo() << "[HOTR] Applying hardware device identity=" << device.identity.key()
+            << "transport=" << device.fingerprint.transport
+            << "path=" << device.fingerprint.path
+            << "player=" << device.player;
+
+    // Existing profiles may be updated during a game, but creating a new
+    // legacy profile is deferred until the emulator closes.
+    const bool allowCreate = p_hardwareManager == nullptr || !p_hardwareManager->gameActive();
+    if(p_comDeviceList->AutoConfigureHardwareDevice(device, allowCreate))
+    {
+        qInfo() << "[HOTR] Hardware manager configured device"
+                << device.identity.key() << "player=" << device.player;
+    }
+    else if(device.deviceType == "unknown" || device.deviceType.isEmpty())
+    {
+        qWarning() << "[HOTR] Hardware manager cannot configure unknown device"
+                   << device.identity.key();
+    }
+}
+
+void HookerEngine::SynchronizeHardwareDevices()
+{
+    // Startup, recovery, and game-stop all call this same synchronization
+    // point. It makes the manager registry authoritative without rewriting
+    // the user-facing legacy file format.
+    if(!p_hardwareManager)
+        return;
+
+    // Track manager-backed players so stale RS3 serial assignments from old
+    // HOTR versions can be removed safely.
+    bool managerPlayers[MAXGAMEPLAYERS] = {};
+    for(const HardwareDevice &device : p_hardwareManager->devices())
+    {
+        if(device.player >= 1 && device.player <= MAXGAMEPLAYERS)
+            managerPlayers[device.player - 1] = true;
+        if(device.present)
+            HardwareDeviceRecovered(device);
+    }
+
+    // The manager is authoritative for physical RS3 devices. Older HOTR
+    // installations can contain one serial profile for each RS3 interface
+    // (serial plus HID), which makes the game layer try stale ttyUSB paths.
+    // Remove only an unbacked RS3 player assignment; keep other transports
+    // and known-but-currently-absent manager devices intact.
+    bool assignmentsChanged = false;
+    for(quint8 player = 0; player < MAXGAMEPLAYERS; ++player)
+    {
+        const quint8 assigned = p_comDeviceList->GetPlayerLightGunAssignment(player);
+        if(assigned == UNASSIGN || assigned >= p_comDeviceList->GetNumberLightGuns())
+            continue;
+
+        LightGun *gun = p_comDeviceList->p_lightGunList[assigned];
+        if(gun != nullptr && gun->GetOutputConnection() == SERIALPORT &&
+           gun->GetDefaultLightGunNumber() == RS3_REAPER && !managerPlayers[player])
+        {
+            qInfo() << "[HOTR] Clearing stale RS3 player assignment player=" << (player + 1)
+                    << "lightGun=" << assigned;
+            p_comDeviceList->DeassignPlayerLightGun(player);
+            assignmentsChanged = true;
+        }
+    }
+    if(assignmentsChanged)
+        p_comDeviceList->SavePlayersAss();
 }
 
 
@@ -2967,6 +3324,12 @@ void HookerEngine::ClearOnDisconnect()
         //lgOutputConnection[i] = -1;
         lgTCPPort[i] = 0;
         lgTCPPlayer[i] = UNASSIGN;
+    }
+
+    for(quint8 i = 0; i < MAXPLAYERLIGHTGUNS; ++i)
+    {
+        directRecoilIntervalTimer[i].stop();
+        pendingDirectRecoilCommands[i].clear();
     }
 
 
@@ -4830,6 +5193,7 @@ void HookerEngine::LoadLGFile()
                     {
                         unassignLG++;
                         lgOutputConnection[i] = UNKNOWNCONNECT;
+                        directRecoilIntervalMs[i] = 0;
                     }
                     else
                     {
@@ -4838,6 +5202,7 @@ void HookerEngine::LoadLGFile()
                             p_comDeviceList->p_lightGunList[lgNumber]->SlowModeEnabled ();
 
                         lgOutputConnection[i] = p_comDeviceList->p_lightGunList[lgNumber]->GetOutputConnection();
+                        directRecoilIntervalMs[i] = p_comDeviceList->p_lightGunList[lgNumber]->GetDirectRecoilInterval();
 
                         //qDebug() << "Game Player" << i << "Output Connection:" << lgOutputConnection[i];
 
@@ -5432,6 +5797,42 @@ void HookerEngine::LoadLGFile()
                         {
                             if(loadedLGNumbers[k] != UNASSIGN)
                                 p_comDeviceList->p_lightGunList[loadedLGNumbers[k]]->SetSkipAutoLED ();
+                        }
+                    }
+                    else if(line.startsWith(RS3AMMOLEDMAPOPTION))
+                    {
+                        const QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+                        QMap<quint16, quint8> ammoLEDMap;
+                        bool validMap = parts.length() > 1;
+
+                        for(int part = 1; part < parts.length() && validMap; part++)
+                        {
+                            const QStringList pair = parts[part].split(':');
+                            bool ammoOK = false;
+                            bool ledOK = false;
+                            const uint ammo = pair.value(0).toUInt(&ammoOK);
+                            const uint led = pair.value(1).toUInt(&ledOK);
+                            validMap = pair.length() == 2 && ammoOK && ledOK &&
+                                       ammo <= 65535 && led <= REAPERMAXAMMONUM;
+                            if(validMap)
+                                ammoLEDMap.insert(static_cast<quint16>(ammo), static_cast<quint8>(led));
+                        }
+
+                        if(!validMap)
+                        {
+                            lgFileLoadFail = true;
+                            lgFile.close();
+                            QString tempCrit = "RS3_Ammo_LED_Map requires ammo:LED pairs with LED values from 0-5.\nLine: "+line+"\nLine Number: "+QString::number(lineNumber)+"\nFile: "+gameLGFilePath;
+                            if(displayMB)
+                                ShowError("Default Light Gun Game File Error", tempCrit);
+                            return;
+                        }
+
+                        for(quint8 k = 0; k < numberLGPlayers; k++)
+                        {
+                            if(loadedLGNumbers[k] != UNASSIGN &&
+                               p_comDeviceList->p_lightGunList[loadedLGNumbers[k]]->GetDefaultLightGunNumber() == RS3_REAPER)
+                                p_comDeviceList->p_lightGunList[loadedLGNumbers[k]]->SetReaperAmmoLEDMap(ammoLEDMap);
                         }
                     }
                     else if(line.startsWith(OVERRIDEFADE))
@@ -6279,6 +6680,11 @@ bool HookerEngine::CheckLGCommand(QString commndNotChk)
 
 void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &value)
 {
+	if(signalName == "P1_Ammo" || signalName == "P2_Ammo")
+		qDebug() << "[HOTR] Ammo signal" << signalName << "value=" << value;
+	else if(signalName == "ReloadPress_P1" || signalName == "ReloadPress_P2")
+		qDebug() << "[HOTR] Reload press signal" << signalName << "value=" << value;
+
     QStringList commands, dlgCommands, multiValue;
     quint8 cmdCount;
     bool allPlayers;
@@ -6623,13 +7029,36 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
                     }
                     else  //E-Z
                     {
-                        if(commands[i][1] == 'R')
+                        if(commands[i] == ">Recoil" &&
+                           IsTimeCrisisPS2Game(gameName) &&
+                           p_comDeviceList->p_lightGunList[lightGun]->GetDefaultLightGunNumber() == RS3_REAPER)
+                        {
+                            // RS3 Z1-Z5 already provide the shot/recoil event
+                            // while updating the ammo LEDs. Do not send the
+                            // separate Z5 GunRecoil command as well.
+                            dlgCMDFound = false;
+                        }
+                        else if(commands[i][1] == 'R')
                         {
                             //Two Commands Start with ">R", If ">Rel" then Reload, If Not then Recoil, and Then only when value != 0
                             if(commands[i][3] == 'l')
                             {
-                                //Reload_Value And Reload
-                                if(commands[i].size() > RELOADVALUECMDSIZE)
+                                // ReloadPress_P1/P2 is a binary edge signal even
+                                // when the profile uses the Reload_Value option.
+                                // Do not pass it through ReloadValueCommands,
+                                // because that shares the ammo state and would
+                                // overwrite the current magazine count with 1/0.
+                                if(signalName == "ReloadPress_P1" || signalName == "ReloadPress_P2")
+                                {
+                                    // Neither edge is an ammo count. For Time Crisis
+                                    // RS3, the actual ammo increase owns reload output:
+                                    // holding the pedal means out of cover, not reload.
+                                    dlgCMDFound = false;
+                                    if(!(IsTimeCrisisPS2Game(gameName) &&
+                                         p_comDeviceList->p_lightGunList[lightGun]->GetDefaultLightGunNumber() == RS3_REAPER) && value != "0")
+                                        dlgCommands = p_comDeviceList->p_lightGunList[lightGun]->ReloadCommands(&dlgCMDFound);
+                                }
+                                else if(commands[i].size() > RELOADVALUECMDSIZE)
                                     dlgCommands = p_comDeviceList->p_lightGunList[lightGun]->ReloadValueCommands(&dlgCMDFound, value.toUShort());
                                 else if(value != "0")
                                     dlgCommands = p_comDeviceList->p_lightGunList[lightGun]->ReloadCommands(&dlgCMDFound);
@@ -6815,6 +7244,10 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
                                     } //For Normal Recoil
                                     else
                                         dlgCommands = p_comDeviceList->p_lightGunList[lightGun]->RecoilCommands(&dlgCMDFound);
+
+                                    if(dlgCMDFound && !isRecoilDelaySet[player] &&
+                                       QueueDirectRecoil(player, dlgCommands))
+                                        dlgCMDFound = false;
                                 }
                             }
                         }  //if(commands[i][1] == 'R')
@@ -6867,22 +7300,7 @@ void HookerEngine::ProcessLGCommands(const QString &signalName, const QString &v
                     //isEmpty() is true when Empty
                     if(dlgCMDFound)
                     {
-                        //Write Command(s) to the Default Light Gun's COM Port
-                        for(k = 0; k < dlgCommands.count(); k++)
-                        {
-                            //qDebug() << "Writting Commands: " << dlgCommands[k];
-
-                            if(dlgCommands[k][0] == DELAYCMD0 && dlgCommands[k][1] == DELAYCMD1)
-                            {
-                                //Remove the "D:" from the front
-                                dlgCommands[k].remove (0,2);
-                                quint32 delay = dlgCommands[k].toUInt ();
-                                //qDebug() << "Delay Commands for" << delay << "isNum" << isNum;
-                                QThread::msleep (delay);
-                            }
-                            else
-                                lgGamePlayers[player].Write (dlgCommands[k]);
-                        }
+                        WriteLGCommandList(player, dlgCommands);
                     }
                 } //if(lightGun != UNASSIGN)
 

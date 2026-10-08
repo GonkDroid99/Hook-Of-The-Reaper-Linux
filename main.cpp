@@ -15,17 +15,18 @@
 int main(int argc, char *argv[])
 {
 
-// check for --no-ui
+// The normal application mode is the configuration UI.  Background callers
+// use --headless; --no-ui remains accepted for older Batocera scripts.
 
     bool noUI = false;
     for (int i = 1; i < argc; i++){
-        if (QString(argv[i]) == "--no-ui") {
+        if (QString(argv[i]) == "--headless" || QString(argv[i]) == "--no-ui") {
             noUI = true;
             break;
         }
     }
     if (noUI) {
-        QCoreApplication a (argc, argv);
+        QApplication a(argc, argv);
         ServiceController::setupUnixSignalHandlers();
         ServiceController controller;
         return a.exec();

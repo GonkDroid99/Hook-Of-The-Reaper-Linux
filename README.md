@@ -182,6 +182,14 @@ But, what if you are playing a new game, and don’t have the signals. Hook Of T
 If the setting is not set for use Default Light Gun files first, it will make a new game file in the ini/MAME directory, with the name of the game dot ini. The top will be a standard INI file top, and then list out all the signals observed during the time the game was open. Also, if any new signals pop up later, that are not in the file, it will be added to the file, when the game closes, like MAMEHooker, does. 
 
 
+### Direct Recoil Interval
+
+Light gun profiles have a **Recoil interval (ms)** setting for direct `>Recoil` commands. The first recoil is sent immediately; additional recoil events during the interval are coalesced into one pending recoil. The timer is independent for each active player/gun output.
+
+`0` disables pacing for compatibility with existing profiles. Newly created RS3 Reaper profiles default to `100` ms. Other gun profiles remain disabled by default until a suitable value is known. Users can enter any value from `1` to `65535` ms in the gun editor.
+
+This setting applies only to direct recoil. It does not change `Recoil_R2S`, reload, damage, LED, ammo, or Reaper `Z0` slide timing.
+
 ### Recoil_R2S Command
 
 The command is used when the arcade gun used rumble for recoil. So when the trigger is held down, the motor is turned on, and when trigger is released, motor is off. So the signal is just 0 (motor off) and 1 (motor on). This doesn't work for at home light gun's which uses a solenoid. A solenoid, needs pulese (0 -> 1 -> 0) to work. Then the pulses are correctly delayed. Now Hook Of The Reaper can convert the rumble motor signal to work with the light gun's soleniod. When the signal goes high, it does a recoil and delay. Then it loops the recoil and delay, until the rumble signal goes back to 0. The delay is in milliseconds, and is located in the light gun's .hor file in the data directory. I pasted the RS3 Reaper below.
@@ -385,7 +393,6 @@ Before compiling, you need to do 2 things.
 # FAQ
 
 Moved to: https://hotr.6bolt.com/pmwiki.php/Tutorial/FAQ
-
 
 
 

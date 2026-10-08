@@ -15,7 +15,6 @@ End Options
 :mame_start
 *All
 >Open_COM_NoInit
->Joystick_Mode
 >Open_COM
 :mame_stop
 *All

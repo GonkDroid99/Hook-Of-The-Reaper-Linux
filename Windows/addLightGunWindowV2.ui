@@ -2938,7 +2938,47 @@
       </font>
      </property>
      <property name="text">
-      <string>Hold Time (1.0-9.0s)</string>
+     <string>Hold Time (1.0-9.0s)</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="recoilIntervalLabel">
+     <property name="geometry">
+      <rect>
+       <x>400</x>
+       <y>0</y>
+       <width>190</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Recoil interval (ms):</string>
+     </property>
+     <property name="toolTip">
+      <string>Enter 0 to disable pacing, or any value from 1 to 65535 ms. Reapers default to 100 ms.</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="recoilIntervalLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>590</x>
+       <y>0</y>
+       <width>60</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>60</width>
+       <height>25</height>
+      </size>
+     </property>
+     <property name="toolTip">
+      <string>Enter 0 to disable pacing, or any value from 1 to 65535 ms. Reaper values around 90-110 ms are typical.</string>
      </property>
     </widget>
     <widget class="QLabel" name="recoilHeadLabel_3">

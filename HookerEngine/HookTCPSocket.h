@@ -111,6 +111,11 @@ private:
     //read Data
     QByteArray readData;
 
+    // TCP is a byte stream: one readyRead() can contain half a line, one
+    // line, or several lines. Keep incomplete protocol data until the next
+    // read instead of assuming packet boundaries are message boundaries.
+    QByteArray pendingLineData;
+
     //Output Signal that Hooker Engine is Looking for
     QStringList outputSignalsFilter;
 

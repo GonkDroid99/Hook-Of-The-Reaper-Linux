@@ -2,9 +2,10 @@
 #include "Windows/ui_playerAssignWindow.h"
 
 //Constructor
-playerAssignWindow::playerAssignWindow(ComDeviceList *cdList, QWidget *parent)
+playerAssignWindow::playerAssignWindow(ComDeviceList *cdList, HardwareManager *hardwareManager, QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::playerAssignWindow)
+    , p_hardwareManager(hardwareManager)
 {
     QString tempQS;
     quint8 i;
@@ -17,6 +18,18 @@ playerAssignWindow::playerAssignWindow(ComDeviceList *cdList, QWidget *parent)
 
     //Move Over the ComDevice List and Get a Copy of the Unused COM Ports
     p_comDeviceList = cdList;
+
+    if(p_hardwareManager)
+    {
+        // Build the bridge once when the dialog opens. The UI still displays
+        // legacy LightGun entries, but saves manual choices to both systems.
+        for(const HardwareDevice &device : p_hardwareManager->devices())
+        {
+            const int lightGun = p_comDeviceList->FindLightGunForHardwareDevice(device);
+            if(lightGun >= 0 && !hardwareIdentityByLightGun.contains(lightGun))
+                hardwareIdentityByLightGun.insert(lightGun, device.identity.key());
+        }
+    }
 
     //Load Players Combo Boxes with the Saved Light Guns; Number, Name, and COM Port. But the first entry will be blank to deassign
     numberLightGuns = p_comDeviceList->GetNumberLightGuns();
@@ -118,6 +131,8 @@ playerAssignWindow::playerAssignWindow(ComDeviceList *cdList, QWidget *parent)
 //Deconstructor
 playerAssignWindow::~playerAssignWindow()
 {
+    // Qt owns the dialog's child widgets through ui; only the generated UI
+    // object needs explicit cleanup here.
     delete ui;
 }
 
@@ -126,11 +141,13 @@ playerAssignWindow::~playerAssignWindow()
 
 void playerAssignWindow::on_assignPushButton_clicked()
 {
+    // Apply the choices but leave the dialog open so the user can review them.
     AssignPlayers();
 }
 
 void playerAssignWindow::on_okPushButton_clicked()
 {
+    // Apply the choices and close the dialog with an accepted result.
     AssignPlayers();
     //Closes Window
     accept ();
@@ -139,6 +156,8 @@ void playerAssignWindow::on_okPushButton_clicked()
 
 void playerAssignWindow::on_cancelPushButton_clicked()
 {
+    // No assignment is written here; closing simply discards unsaved combo
+    // box changes.
     //Closes Window
     accept ();
 }
@@ -148,6 +167,8 @@ void playerAssignWindow::on_cancelPushButton_clicked()
 
 void playerAssignWindow::GetComboBoxIndexes()
 {
+    // Combo-box index zero means "unassigned"; every other index is the
+    // zero-based LightGun list index plus one for display.
     playersIndex[0] = ui->player1ComboBox->currentIndex ();
     playersIndex[1] = ui->player2ComboBox->currentIndex ();
     playersIndex[2] = ui->player3ComboBox->currentIndex ();
@@ -160,6 +181,8 @@ void playerAssignWindow::GetComboBoxIndexes()
 
 void playerAssignWindow::AssignPlayers()
 {
+    // First validate the complete eight-player selection, then write the
+    // legacy assignment file and mirror the same choices into devices.json.
     bool assignmentError = false;
     bool passedToList;
     quint8 i, j;
@@ -167,7 +190,7 @@ void playerAssignWindow::AssignPlayers()
 
     GetComboBoxIndexes();
 
-    //Check to make sure a Light Gun is not Being Assign Multiple times
+    // A single legacy LightGun profile may only belong to one player.
     for(i = 0; i < (MAXPLAYERLIGHTGUNS-1); i++)
     {
         for(j = (i+1); j < MAXPLAYERLIGHTGUNS; j++)
@@ -238,6 +261,30 @@ void playerAssignWindow::AssignPlayers()
             p_comDeviceList->DeassignPlayerLightGun(7);
         else
             passedToList = p_comDeviceList->AssignPlayerLightGun(7, playersIndex[7]-1);
+
+        // Keep the new hardware registry authoritative as well as the legacy
+        // playersAss.hor projection used by the existing game engine. The
+        // hardware map lets this work even when a tty path has changed.
+        if(p_hardwareManager)
+        {
+            for(i = 0; i < MAXPLAYERLIGHTGUNS; ++i)
+            {
+                const quint8 previous = playersAssignment[i];
+                if(previous != UNASSIGN && hardwareIdentityByLightGun.contains(previous) &&
+                   (playersIndex[i] == 0 || playersIndex[i] - 1 != previous))
+                {
+                    p_hardwareManager->unassignPlayer(hardwareIdentityByLightGun.value(previous));
+                }
+
+                if(playersIndex[i] != 0)
+                {
+                    const int lightGun = playersIndex[i] - 1;
+                    if(hardwareIdentityByLightGun.contains(lightGun))
+                        p_hardwareManager->assignPlayer(hardwareIdentityByLightGun.value(lightGun),
+                                                        i + 1, HardwareAssignmentMode::Manual);
+                }
+            }
+        }
     }
 
 }

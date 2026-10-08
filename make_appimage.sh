@@ -48,15 +48,18 @@ cp HookOfTheReaper.desktop AppDir/usr/share/applications/HookOfTheReaper.desktop
 
 # Write a custom AppRun so Qt uses xcb and the binary is launched correctly.
 # linuxdeploy won't overwrite an existing AppRun.
+
 cat > AppDir/AppRun << 'APPRUN_EOF'
 #!/bin/bash
 HERE="$(dirname "$(readlink -f "$0")")"
+
 export PATH="$HERE/usr/bin:$PATH"
 export LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"
 export QT_PLUGIN_PATH="$HERE/usr/plugins"
 export QML2_IMPORT_PATH="$HERE/usr/qml"
-# Force xcb so the app doesn't try Wayland/unknown platforms inside AppImage
-export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+
+export QT_QPA_PLATFORM=xcb
+
 exec "$HERE/usr/bin/HookOfTheReaper" "$@"
 APPRUN_EOF
 chmod +x AppDir/AppRun

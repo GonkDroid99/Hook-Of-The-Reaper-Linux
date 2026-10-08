@@ -46,41 +46,53 @@ HookTCPSocket::~HookTCPSocket()
 
 void HookTCPSocket::TCPReadData()
 {
-    quint8 i;
+    // TCP does not preserve the sender's writes. A single MameOutputSender
+    // message can arrive split across multiple readyRead() calls, while
+    // several messages can arrive in one call. Buffer until a complete CR or
+    // LF terminated line is available before interpreting it.
+    pendingLineData.append(p_hookSocket->readAll());
 
-    //Read the TCP Socket Data
-    readData = p_hookSocket->readAll ();
-
-    //Convert to Byte Array to String
-    QString message = QString::fromStdString (readData.toStdString ());
-
-    //Remove the \r at the end
-    message.chop(1);
-
-    //qDebug() << message;
-
-    //If Multiple Data Lines, they will be seperated into lines, using \r or \n
-    //If it had 2 data lines together, then \r would be at end which is chopped off, and middle
-    //QRegularExpression endLines("[\r\n]");
-    QStringList tcpSocketReadData = message.split(QRegularExpression("[\r\n]"), Qt::SkipEmptyParts);
-
-    for(i = 0; i < tcpSocketReadData.count(); i++)
+    while (true)
     {
-        //Get the Output Signal Name
-        QStringList splitData = tcpSocketReadData[i].split(" = ", Qt::SkipEmptyParts);
+        int delimiterIndex = -1;
+        for (int index = 0; index < pendingLineData.size(); ++index)
+        {
+            if (pendingLineData.at(index) == '\r' || pendingLineData.at(index) == '\n')
+            {
+                delimiterIndex = index;
+                break;
+            }
+        }
+        if (delimiterIndex < 0)
+            break;
 
-        //qDebug() << "Socket Read, signal:" << splitData[0] << "data:" << splitData[1];
+        QByteArray lineBytes = pendingLineData.left(delimiterIndex);
+        int bytesToRemove = delimiterIndex + 1;
+        if (pendingLineData.at(delimiterIndex) == '\r' &&
+            bytesToRemove < pendingLineData.size() &&
+            pendingLineData.at(bytesToRemove) == '\n')
+        {
+            ++bytesToRemove;
+        }
+        pendingLineData.remove(0, bytesToRemove);
+
+        const QString line = QString::fromUtf8(lineBytes).trimmed();
+        if (line.isEmpty())
+            continue;
+
+        // MameOutputSender uses "signal = value". Keep an empty value valid
+        // because mame_stop intentionally has no payload.
+        const int separatorIndex = line.indexOf(" = ");
+        const QString signal = separatorIndex >= 0 ? line.left(separatorIndex) : line;
+        const QString data = separatorIndex >= 0 ? line.mid(separatorIndex + 3) : QString();
 
         //Check if Game Has Stopped
-        if(splitData[0].size() == 9 && inGame)
+        if(signal.size() == 9 && inGame)
         {
-            if(splitData[0][5] == 's' && splitData[0][6] == 't' && splitData[0][8] == 'p')
+            if(signal[5] == 's' && signal[6] == 't' && signal[8] == 'p')
             {
                 emit GameHasStopped();
                 inGame = false;
-
-                if(splitData.count() == 1)
-                    splitData.append("0");
             }
         }
 
@@ -93,55 +105,58 @@ void HookTCPSocket::TCPReadData()
             //Check if Light Guns and Light Controllers using Output Signal
             if(bothOutputSig)
             {
-                if(outputSignalsBoth.contains(splitData[0]))
-                    emit FilteredOutputSignalsBoth(splitData[0], splitData[1]);
+                if(outputSignalsBoth.contains(signal))
+                    emit FilteredOutputSignalsBoth(signal, data);
             }
 
             //Check if Light Guns using Output Signal
             if(lgOutputSig)
             {
-                if(outputSignalsFilter.contains(splitData[0]))
-                    emit FilteredOutputSignals(splitData[0], splitData[1]);
+                if(outputSignalsFilter.contains(signal))
+                    emit FilteredOutputSignals(signal, data);
             }
 
             //Check if Light Controllers using Output Signal
             if(lcOutputSig)
             {
-                if(outputSignalsLight.contains(splitData[0]))
-                    emit FilteredOutputSignalsLight(splitData[0], splitData[1]);
+                if(outputSignalsLight.contains(signal))
+                    emit FilteredOutputSignalsLight(signal, data);
             }
 
             if(!isMinimized)
-                emit FilteredTCPData(splitData[0], splitData[1]);
+                emit FilteredTCPData(signal, data);
         }
         else
         {
-            //qDebug() << "Socket Read Before Game, signal:" << splitData[0] << "data:" << splitData[1];
+            //qDebug() << "Socket Read Before Game, signal:" << signal << "data:" << data;
 
             //Check for Game Starting
-            if(splitData[0] == MAMESTART)
+            if(signal == MAMESTART)
             {
-                if(splitData[1] == MAMEEMPTY)
+                if(data == MAMEEMPTY)
                     emit EmptyGameHasStarted();
                 else
-                    emit GameHasStarted(splitData[1]);
+                    emit GameHasStarted(data);
             }
-            else if(splitData[0] == GAMESTART)
-                emit GameHasStarted(splitData[1]);
+            else if(signal == GAMESTART)
+                emit GameHasStarted(data);
             else
             {
-                if(splitData[0][0] == 'M' && splitData[0][1] == 'a' && splitData[0][2] == 'm')
+                if(signal.size() >= 3 && signal[0] == 'M' && signal[1] == 'a' && signal[2] == 'm')
                 {
-                    if(splitData[0][4] == 'P' && splitData[0].size() == 9)
-                        splitData[0] = PAUSE;
-                    else if(splitData[0][4] == 'O' && splitData[0].size() == 15)
-                        splitData[0].replace(MAMEORIENTATION, ORIENTATION);
+                    QString normalizedSignal = signal;
+                    if(normalizedSignal.size() >= 5 && normalizedSignal[4] == 'P' && normalizedSignal.size() == 9)
+                        normalizedSignal = PAUSE;
+                    else if(normalizedSignal.size() >= 5 && normalizedSignal[4] == 'O' && normalizedSignal.size() == 15)
+                        normalizedSignal.replace(MAMEORIENTATION, ORIENTATION);
+
+                    emit DataRead(normalizedSignal, data);
+                    continue;
                 }
 
-                emit DataRead(splitData[0], splitData[1]);
+                emit DataRead(signal, data);
             }
         }
-
     }
 }
 
@@ -189,6 +204,7 @@ void HookTCPSocket::Disconnect()
     lgOutputSig = false;
     lcOutputSig = false;
     bothOutputSig = false;
+    pendingLineData.clear();
 }
 
 //Used for MultiThreading
@@ -212,6 +228,7 @@ void HookTCPSocket::SocketDisconnected()
     lgOutputSig = false;
     lcOutputSig = false;
     bothOutputSig = false;
+    pendingLineData.clear();
 
     emit SocketDisconnectedSignal();
 

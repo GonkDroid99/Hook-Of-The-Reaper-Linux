@@ -11,9 +11,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort Network Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort Network Multimedia Test)
 
 # Platform-specific source files and dependencies
 if(WIN32)
@@ -43,6 +43,10 @@ add_executable(HookOfTheReaper
     hookOfTheReaper.h
     hookOfTheReaper.ui
     Global.h
+
+    DefaultLightGunSettings.cpp DefaultLightGunSettings.h
+
+    HardwareManager/HardwareManager.cpp HardwareManager/HardwareManager.h
 
     README.md
     data/iniDefault.hor data/lgDefault.hor data/settings.hor
@@ -165,13 +169,22 @@ endforeach()
 
     # Write AppRun at configure time into the build dir — cmake brackets prevent $ expansion
     set(APPRUN_STAGING "${CMAKE_BINARY_DIR}/AppRun.in")
-    file(WRITE "${APPRUN_STAGING}" [=[#!/bin/bash
+file(WRITE "${APPRUN_STAGING}" [=[#!/bin/bash
+
 HERE="$(dirname "$(readlink -f "$0")")"
+
 export PATH="$HERE/usr/bin:$PATH"
-export LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"
-export QT_PLUGIN_PATH="$HERE/usr/plugins"
-export QML2_IMPORT_PATH="$HERE/usr/qml"
+
+export LD_LIBRARY_PATH="$HERE/usr/lib:$HERE/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
+
+export QT_PLUGIN_PATH="$HERE/usr/plugins:$HERE/usr/lib/qt6/plugins:$HERE/usr/lib/x86_64-linux-gnu/qt6/plugins"
+
+export QT_QPA_PLATFORM_PLUGIN_PATH="$HERE/usr/plugins/platforms:$HERE/usr/lib/qt6/plugins/platforms:$HERE/usr/lib/x86_64-linux-gnu/qt6/plugins/platforms"
+
+export QML2_IMPORT_PATH="$HERE/usr/qml:$HERE/usr/lib/x86_64-linux-gnu/qt6/qml"
+
 export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+
 exec "$HERE/usr/bin/HookOfTheReaper" "$@"
 ]=])
 
@@ -187,6 +200,11 @@ exec "$HERE/usr/bin/HookOfTheReaper" "$@"
         # 2. Assemble AppDir
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${APPDIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}/usr/bin
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}/usr/plugins/platforms
+        # Keep the headless Batocera service usable when QT_QPA_PLATFORM=offscreen.
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms/libqoffscreen.so
+            ${APPDIR}/usr/plugins/platforms/libqoffscreen.so
         COMMAND ${CMAKE_COMMAND} -E make_directory ${APPDIR}/usr/share/applications
         COMMAND ${CMAKE_COMMAND} -E make_directory
             ${APPDIR}/usr/share/icons/hicolor/256x256/apps
@@ -222,3 +240,14 @@ exec "$HERE/usr/bin/HookOfTheReaper" "$@"
         USES_TERMINAL
     )
 endif()
+
+enable_testing()
+add_executable(HardwareManagerTest
+    tests/HardwareManagerTest.cpp
+    HardwareManager/HardwareManager.cpp HardwareManager/HardwareManager.h
+    DefaultLightGunSettings.cpp DefaultLightGunSettings.h
+)
+target_include_directories(HardwareManagerTest PRIVATE ${HIDAPI_INCLUDE_DIRS})
+target_link_libraries(HardwareManagerTest PRIVATE Qt::Core Qt::SerialPort Qt::Test ${HIDAPI_LIBRARIES})
+target_compile_options(HardwareManagerTest PRIVATE ${HIDAPI_CFLAGS_OTHER})
+add_test(NAME HardwareManagerTest COMMAND HardwareManagerTest)

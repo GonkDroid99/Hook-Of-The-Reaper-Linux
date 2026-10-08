@@ -1,103 +1,358 @@
 #!/bin/bash
-# Builds a portable HookOfTheReaper AppImage inside a Docker container.
-# This produces a binary compatible with older glibc (Ubuntu 22.04 = glibc 2.35),
-# which is required for Batocera and other non-rolling Linux distributions.
 #
-# Requirements: Docker installed and running.
-# Run from the repo root.
+# Build HookOfTheReaper AppImage inside Ubuntu 22.04.
+#
+# This avoids linking against the much newer glibc/libstdc++ found on
+# Arch/CachyOS and produces an AppImage suitable for older distributions
+# such as Batocera 43.
+#
+# Requires:
+#   Docker OR Podman
+#
+# Usage:
+#   chmod +x make_appimage_docker.sh
+#   ./make_appimage_docker.sh
+#
 
-set -e
+set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE="hotr-appimage-builder"
+cd "$SCRIPT_DIR"
+
+IMAGE_NAME="hotr-appimage-builder"
+BUILD_DIR="build_appimage"
 OUTPUT="HookOfTheReaper-x86_64.AppImage"
 
-# Prefer Docker; fall back to Podman
-DOCKER_CMD=$(command -v docker 2>/dev/null || command -v podman 2>/dev/null || true)
-if [ -z "$DOCKER_CMD" ]; then
-    echo "ERROR: Neither Docker nor Podman found."
-    echo "Install with: sudo pacman -S podman"
+# ------------------------------------------------------------
+# Find Docker or Podman
+# ------------------------------------------------------------
+
+CONTAINER_CMD=""
+
+if command -v docker >/dev/null 2>&1; then
+    CONTAINER_CMD="docker"
+elif command -v podman >/dev/null 2>&1; then
+    CONTAINER_CMD="podman"
+else
+    echo "ERROR: Docker or Podman is required."
+    echo
+    echo "On Arch/CachyOS you can install Podman with:"
+    echo "  sudo pacman -S podman"
     exit 1
 fi
-echo "Using: $DOCKER_CMD"
 
-echo "=== Building $OUTPUT (Ubuntu 22.04 container) ==="
+echo "============================================"
+echo " HookOfTheReaper AppImage Builder"
+echo "============================================"
+echo
+echo "Container runtime: $CONTAINER_CMD"
+echo "Build image:       $IMAGE_NAME"
+echo "Output:            $OUTPUT"
+echo
 
-# Build the container image if not already built
-if ! "$DOCKER_CMD" image inspect "$IMAGE" &>/dev/null; then
-    echo "[1/3] Building container image (first time only, ~5 minutes)..."
-    "$DOCKER_CMD" build -f "$SCRIPT_DIR/Dockerfile.appimage" -t "$IMAGE" "$SCRIPT_DIR"
-else
-    echo "[1/3] Container image already exists, skipping build."
+# ------------------------------------------------------------
+# Verify required source files exist
+# ------------------------------------------------------------
+
+if [ ! -f "$SCRIPT_DIR/CMakeLists.txt" ]; then
+    echo "ERROR: CMakeLists.txt not found."
+    echo "Run this script from the HookOfTheReaper repo root."
+    exit 1
 fi
 
-# Run the build inside the container
-echo "[2/3] Compiling and packaging inside container..."
-"$DOCKER_CMD" run --rm \
-    --privileged \
+if [ ! -f "$SCRIPT_DIR/Dockerfile.appimage" ]; then
+    echo "ERROR: Dockerfile.appimage not found."
+    exit 1
+fi
+
+if [ ! -f "$SCRIPT_DIR/HookOfTheReaper.desktop" ]; then
+    echo "ERROR: HookOfTheReaper.desktop not found."
+    exit 1
+fi
+
+# ------------------------------------------------------------
+# Build/update container image
+# ------------------------------------------------------------
+
+echo "[1/4] Building Ubuntu 22.04 build environment..."
+
+"$CONTAINER_CMD" build \
+    --pull \
+    -f "$SCRIPT_DIR/Dockerfile.appimage" \
+    -t "$IMAGE_NAME" \
+    "$SCRIPT_DIR"
+
+echo
+echo "[2/4] Compiling HOTR and building AppImage..."
+
+# -i is important because the build script is supplied through stdin.
+#
+# We run with the host user's UID/GID so generated files don't become
+# root-owned on the host.
+"$CONTAINER_CMD" run \
+    --rm \
+    -i \
+    --user "$(id -u):$(id -g)" \
+    -e HOME=/tmp/hotr-home \
     -v "$SCRIPT_DIR:/src" \
     -w /src \
-    "$IMAGE" \
-    bash -c '
-        set -e
+    "$IMAGE_NAME" \
+    bash <<'CONTAINER_EOF'
 
-        # Build
-        cmake -B build_docker -DCMAKE_BUILD_TYPE=Release > /dev/null
-        cmake --build build_docker -j$(nproc)
+set -euo pipefail
 
-        # Assemble AppDir
-        rm -rf AppDir
-        mkdir -p AppDir/usr/bin
-        mkdir -p AppDir/usr/share/applications
-        mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+BUILD_DIR="build_appimage"
+OUTPUT="HookOfTheReaper-x86_64.AppImage"
 
-        cp build_docker/HookOfTheReaper AppDir/usr/bin/HookOfTheReaper
-        cp data/icons/hOTRIcon256.png AppDir/usr/share/icons/hicolor/256x256/apps/HookOfTheReaper.png
-        cp HookOfTheReaper.desktop AppDir/usr/share/applications/HookOfTheReaper.desktop
+echo
+echo "============================================"
+echo " Container environment"
+echo "============================================"
 
-        # Custom AppRun: force xcb platform so the app works without QT_QPA_PLATFORM set.
-        # linuxdeploy will not overwrite an existing AppRun.
-        cat > AppDir/AppRun << '"'"'APPRUN_EOF'"'"'
-#!/bin/bash
-HERE="$(dirname "$(readlink -f "$0")")"
-export PATH="$HERE/usr/bin:$PATH"
-export LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"
-export QT_PLUGIN_PATH="$HERE/usr/plugins"
-export QML2_IMPORT_PATH="$HERE/usr/qml"
-export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
-exec "$HERE/usr/bin/HookOfTheReaper" "$@"
-APPRUN_EOF
-        chmod +x AppDir/AppRun
+echo -n "glibc: "
+ldd --version | sed -n '1p'
 
-        # Bundle with linuxdeploy.
-        # X11/xcb display libs are excluded — they must come from the host system
-        # because they need to match the X server version exactly.
-        APPIMAGE_EXTRACT_AND_RUN=1 \
-        QMAKE=/usr/bin/qmake6 \
-        OUTPUT=HookOfTheReaper-x86_64.AppImage \
-        /usr/local/bin/linuxdeploy \
-            --appdir AppDir \
-            --plugin qt \
-            --output appimage \
-            --desktop-file HookOfTheReaper.desktop \
-            --icon-file data/icons/hOTRIcon256.png \
-            --exclude-library libX11.so.6 \
-            --exclude-library libXau.so.6 \
-            --exclude-library libXdmcp.so.6 \
-            --exclude-library libxcb.so.1 \
-            --exclude-library "libxcb-*.so.*" \
-            --exclude-library libxkbcommon.so.0 \
-            --exclude-library libxkbcommon-x11.so.0 \
-            --exclude-library libX11-xcb.so.1
-    '
+echo -n "gcc:   "
+g++ --version | sed -n '1p'
 
-echo "[3/3] Done."
-echo ""
-echo "AppImage: $SCRIPT_DIR/$OUTPUT"
-echo ""
-echo "To deploy to Batocera:"
-echo "  1. Copy $OUTPUT to Batocera (e.g. to /userdata/roms/ports/)"
-echo "  2. Copy the data/ directory alongside it (same folder)"
-echo "  3. chmod +x $OUTPUT"
-echo "  4. Run: ./$OUTPUT"
-echo ""
-echo "The data/ folder stores your gun configs — keep it next to the AppImage."
+echo -n "cmake: "
+cmake --version | sed -n '1p'
+
+echo "qmake:"
+qmake6 --version
+
+# ------------------------------------------------------------
+# Clean previous build
+# ------------------------------------------------------------
+
+echo "Cleaning previous build..."
+
+rm -rf "$BUILD_DIR"
+rm -f "$OUTPUT"
+
+# Remove linuxdeploy binaries from previous builds if you want CMake
+# to fetch fresh copies every time.
+#
+# Comment these two lines out if you'd rather cache them.
+rm -f linuxdeploy-x86_64.AppImage
+rm -f linuxdeploy-plugin-qt-x86_64.AppImage
+
+# ------------------------------------------------------------
+# Configure
+# ------------------------------------------------------------
+
+echo
+echo "============================================"
+echo " Configuring"
+echo "============================================"
+
+cmake \
+    -S . \
+    -B "$BUILD_DIR" \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+
+# ------------------------------------------------------------
+# Build your existing CMake 'appimage' target
+# ------------------------------------------------------------
+
+echo
+echo "============================================"
+echo " Building AppImage"
+echo "============================================"
+
+cmake \
+    --build "$BUILD_DIR" \
+    --target appimage \
+    -j"$(nproc)"
+
+# ------------------------------------------------------------
+# Verify output
+# ------------------------------------------------------------
+
+if [ ! -f "$OUTPUT" ]; then
+    echo
+    echo "ERROR: AppImage was not created."
+    exit 1
+fi
+
+chmod +x "$OUTPUT"
+
+echo
+echo "============================================"
+echo " AppImage created"
+echo "============================================"
+
+ls -lh "$OUTPUT"
+
+# ------------------------------------------------------------
+# Extract AppImage for validation
+# ------------------------------------------------------------
+
+echo
+echo "Extracting AppImage for validation..."
+
+rm -rf /tmp/hotr-appimage-check
+
+mkdir -p /tmp/hotr-appimage-check
+cd /tmp/hotr-appimage-check
+
+APPIMAGE_EXTRACT_AND_RUN=1 "/src/$OUTPUT" \
+    --appimage-extract >/dev/null
+
+if [ ! -d squashfs-root ]; then
+    echo "WARNING: Could not extract AppImage for validation."
+    exit 0
+fi
+
+# ------------------------------------------------------------
+# Verify key Qt pieces
+# ------------------------------------------------------------
+
+echo
+echo "============================================"
+echo " Checking bundled Qt libraries"
+echo "============================================"
+
+for LIB in \
+    "libQt6Core.so.6" \
+    "libQt6Gui.so.6" \
+    "libQt6Widgets.so.6" \
+    "libQt6Network.so.6" \
+    "libQt6SerialPort.so.6" \
+    "libQt6Multimedia.so.6"
+do
+    RESULT="$(find squashfs-root -name "$LIB" -print -quit)"
+
+    if [ -n "$RESULT" ]; then
+        echo "[OK] $LIB"
+        echo "     $RESULT"
+    else
+        echo "[MISSING] $LIB"
+    fi
+done
+
+echo
+echo "Qt xcb platform plugin:"
+
+QXCB="$(find squashfs-root -name 'libqxcb.so' -print -quit)"
+
+if [ -n "$QXCB" ]; then
+    echo "[OK] $QXCB"
+else
+    echo "[WARNING] libqxcb.so not found."
+fi
+
+# ------------------------------------------------------------
+# Check missing dependencies inside AppImage
+# ------------------------------------------------------------
+
+echo
+echo "============================================"
+echo " Checking HOTR binary dependencies"
+echo "============================================"
+
+HOTR_BINARY="$(find squashfs-root -path '*/usr/bin/HookOfTheReaper' -print -quit)"
+
+if [ -n "$HOTR_BINARY" ]; then
+    LD_LIBRARY_PATH="$(pwd)/squashfs-root/usr/lib:$(pwd)/squashfs-root/usr/lib/x86_64-linux-gnu" \
+        ldd "$HOTR_BINARY" || true
+else
+    echo "ERROR: HookOfTheReaper binary wasn't found inside AppImage."
+fi
+
+# ------------------------------------------------------------
+# Determine highest GLIBC requirement
+# ------------------------------------------------------------
+
+echo
+echo "============================================"
+echo " Highest GLIBC requirements"
+echo "============================================"
+
+find squashfs-root -type f -print0 |
+while IFS= read -r -d '' FILE; do
+    if file "$FILE" | grep -q 'ELF'; then
+        objdump -T "$FILE" 2>/dev/null |
+            grep -o 'GLIBC_[0-9.]*' || true
+    fi
+done |
+sort -Vu |
+tail -20
+
+# ------------------------------------------------------------
+# Determine highest GLIBCXX requirement
+# ------------------------------------------------------------
+
+echo
+echo "============================================"
+echo " Highest GLIBCXX requirements"
+echo "============================================"
+
+find squashfs-root -type f -print0 |
+while IFS= read -r -d '' FILE; do
+    if file "$FILE" | grep -q 'ELF'; then
+        strings "$FILE" 2>/dev/null |
+            grep -o 'GLIBCXX_[0-9.]*' || true
+    fi
+done |
+sort -Vu |
+tail -20
+
+# ------------------------------------------------------------
+# Determine highest CXXABI requirement
+# ------------------------------------------------------------
+
+echo
+echo "============================================"
+echo " Highest CXXABI requirements"
+echo "============================================"
+
+find squashfs-root -type f -print0 |
+while IFS= read -r -d '' FILE; do
+    if file "$FILE" | grep -q 'ELF'; then
+        strings "$FILE" 2>/dev/null |
+            grep -o 'CXXABI_[0-9.]*' || true
+    fi
+done |
+sort -Vu |
+tail -20
+
+echo
+echo "Validation complete."
+
+CONTAINER_EOF
+
+# ------------------------------------------------------------
+# Host-side final check
+# ------------------------------------------------------------
+
+echo
+echo "[3/4] Checking output..."
+
+if [ ! -f "$SCRIPT_DIR/$OUTPUT" ]; then
+    echo
+    echo "ERROR: Build finished but $OUTPUT does not exist."
+    exit 1
+fi
+
+chmod +x "$SCRIPT_DIR/$OUTPUT"
+
+echo
+echo "[4/4] Done."
+echo
+echo "============================================"
+echo " Build successful"
+echo "============================================"
+echo
+ls -lh "$SCRIPT_DIR/$OUTPUT"
+echo
+echo "Output:"
+echo "  $SCRIPT_DIR/$OUTPUT"
+echo
+echo "For Batocera:"
+echo "  1. Replace your existing HOTR AppImage with this file."
+echo "  2. chmod +x $OUTPUT"
+echo "  3. Keep your HOTR data directory in the expected location."
+echo

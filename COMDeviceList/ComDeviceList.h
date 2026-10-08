@@ -33,6 +33,9 @@
 //Ultimarc PacDrive SDK
 #include "PacDriveControl.h"
 
+struct DeviceFingerprint;
+struct HardwareDevice;
+
 class ComDeviceList : public QObject
 {
     Q_OBJECT
@@ -107,15 +110,27 @@ public:
     //Player's Light Gun Assignment, Deassignment, or Get Assignment
     bool            AssignPlayerLightGun(quint8 playerNum, quint8 lgNum);
     void            DeassignPlayerLightGun(quint8 playerNum);
-    quint8          GetPlayerLightGunAssignment(quint8 playerNum);
+    quint8          GetPlayerLightGunAssignment(quint8 playerNum) const;
 
 
     //Save or Load Light Guns to/from a File
     void            SaveLightGunList();
     void            LoadLightGunList();
+    // Replace the in-memory gun list with the current on-disk configuration.
+    // Used by Batocera's automatic hardware reconfiguration path.
+    void            ReloadLightGunList();
+    bool            RefreshSerialDevicePath(const DeviceFingerprint &fingerprint, quint8 player = 0);
+    // Return the legacy profile index that represents a manager device. This
+    // lets the assignment UI update both registries without changing the
+    // user-facing legacy profile format.
+    int             FindLightGunForHardwareDevice(const HardwareDevice &device) const;
+    // Apply a HardwareManager device to the legacy HOTR profile/assignment
+    // files.  Existing profiles are updated in place; supported devices that
+    // have no legacy entry receive a default profile for the next game.
+    bool            AutoConfigureHardwareDevice(const HardwareDevice &device, bool allowCreate = true);
 
-    //Load V3 Light Gun Saved Data
-    void            LoadLightGunListV3();
+    //Load V3/V4 Light Gun Saved Data. V3 has no direct-recoil interval.
+    void            LoadLightGunListV3(bool hasDirectRecoilInterval = false);
 
 
     //Save or Load Players Assignment to/from File

@@ -11,6 +11,7 @@
 #include <QTextStream>
 #include <QTimer>
 #include <QThread>
+#include <QMap>
 #include <QtMath>
 //#include <QDebug>
 
@@ -57,6 +58,8 @@ public:
     void SetComPortNumber(quint8 cpNumber) { comPortNum = cpNumber; }
     void SetComPortString(QString cpString) { comPortString = cpString; }
     void SetComPortInfo(QSerialPortInfo cpInfo) { comPortInfo = cpInfo; }
+    // Replace a disconnected tty path while retaining the same gun profile.
+    void UpdateSerialPortPath(const QString &path, const QString &persistentPath = QString());
     void SetComPortBaud(qint32 cpBaud) { comPortBaud = cpBaud; }
     void SetComPortDataBits(quint8 cpDataBits) { comPortDataBits = cpDataBits; }
     void SetComPortParity(quint8 cpParity) { comPortParity = cpParity; }
@@ -66,6 +69,7 @@ public:
     void SetHubComPortNumber(quint8 hcpNumber) { hubComPortNumber = hcpNumber;}
     void SetHIDInfo(HIDInfo hidInfoStruct) { usbHIDInfo = hidInfoStruct; }
     void SetRecoilDelay(quint16 rcDelay) { recoilDelay = rcDelay; isRecoilDelaySet = true;}
+    void SetDirectRecoilInterval(quint16 interval) { directRecoilIntervalMs = interval; }
     void SetDisableReaperLEDs(bool disableRLED) { disableReaperLEDs = disableRLED; }
     void SetDisplayPriority(DisplayPriority displayP);
     void SetDisplayOtherPriority(bool other) { displayOtherPriority = other; }
@@ -81,13 +85,18 @@ public:
     void SetReaperSlideData(ReaperSlideData slideData);
     void SetDisplayOpenFire(DisplayOpenFire displayOF);
     void SetReaperLargeAmmo(quint8 largeAmmo) { reapearLargeAmmoValue = largeAmmo; }
+    // Time Crisis controls RS3 ammo LEDs explicitly instead of automatic ZR.
     void SetSkipAutoLED();
+    void ClearSkipAutoLED();
+    void SetTimeCrisisMode(bool enabled) { timeCrisisMode = enabled; }
+    // Override the default ammo-to-LED mapping for a game profile.
+    void SetReaperAmmoLEDMap(const QMap<quint16, quint8> &map) { reaperAmmoLEDMap = map; }
 
 
 
     //Get Functions that Gets the Stated Variable
-    bool GetDefaultLightGun() { return defaultLightGun; }
-    quint8 GetDefaultLightGunNumber() { return defaultLightGunNum; }
+    bool GetDefaultLightGun() const { return defaultLightGun; }
+    quint8 GetDefaultLightGunNumber() const { return defaultLightGunNum; }
     QString GetLightGunName() { return lightGunName; }
     quint8 GetLightGunNumber() { return lightGunNum; }
     quint8 GetComPortNumber();
@@ -107,13 +116,14 @@ public:
     HIDInfo GetUSBHIDInfo() { return usbHIDInfo; }
     quint16 GetRecoilDelay();
     bool IsRecoilDelay() { return isRecoilDelaySet; }
+    quint16 GetDirectRecoilInterval() const { return directRecoilIntervalMs; }
     QString GetComPortPath();
     bool GetDisableReaperLEDs() {  return disableReaperLEDs; }
     DisplayPriority GetDisplayPriority();
     bool GetDisplayOtherPriority() { return displayOtherPriority; }
     quint16 GetDisplayRefresh(bool *isRDS);
     LightGunSettings GetLightGunSettings();
-    qint8 GetOutputConnection() { return outputConnection; }
+    qint8 GetOutputConnection() const { return outputConnection; }
     quint16 GetTCPPort() { return tcpPort; }
     quint8 GetTCPPlayer() { return tcpPlayer; }
     quint8 GetRecoilVoltage() { return recoilVoltage; }
@@ -257,6 +267,7 @@ private:
     bool                isReaper5LEDsInited;
     quint8              reapearLargeAmmoValue;
     bool                reaperSkipAutoLED;
+    QMap<quint16, quint8> reaperAmmoLEDMap; // Ammo count -> RS3 LED value.
     //Repaer Ammo 0 Z0 Delay Buffer
     bool                disableReaperHoldBack;
     bool                enableReaperAmmo0Delay;
@@ -305,6 +316,7 @@ private:
     //Reload Options
     bool                reloadNoRumble;
     bool                reloadDisable;
+    bool                timeCrisisMode = false; // Current game uses Time Crisis rules.
 
     quint8              reloadSetting;
     quint8              damageSetting;
@@ -339,6 +351,8 @@ private:
     HIDInfo             usbHIDInfo;
     bool                isRecoilDelaySet;
     quint16             recoilDelay;
+    // Independent pacing for direct Recoil commands. Zero disables it.
+    quint16             directRecoilIntervalMs = 0;
 
     QString             currentPath;
     QString             dataPath;

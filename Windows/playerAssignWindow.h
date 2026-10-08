@@ -8,6 +8,8 @@
 
 
 #include "../COMDeviceList/ComDeviceList.h"
+#include "../HardwareManager/HardwareManager.h"
+#include <QHash>
 
 
 namespace Ui {
@@ -19,7 +21,8 @@ class playerAssignWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit playerAssignWindow(ComDeviceList *cdList, QWidget *parent = nullptr);
+    explicit playerAssignWindow(ComDeviceList *cdList, HardwareManager *hardwareManager = nullptr,
+                                QWidget *parent = nullptr);
     ~playerAssignWindow();
 
 private slots:
@@ -46,15 +49,19 @@ private:
     //For Window Stuff
     Ui::playerAssignWindow  *ui;
 
-    //ComDeviceList to Add the Light Gun Too. Do Not Delete!
+    // Legacy profile list used by the existing game engine. Do not delete.
     ComDeviceList           *p_comDeviceList;
+    // New persistent hardware registry used for automatic detection.
+    HardwareManager         *p_hardwareManager;
+    // Legacy LightGun index -> persistent HardwareManager identity.
+    QHash<int, QString>      hardwareIdentityByLightGun;
 
 
     //Number of Light Gun in the List
     quint8                  numberLightGuns;
 
-    quint8                  playersAssignment[MAXPLAYERLIGHTGUNS];
-    qint16                  playersIndex[MAXPLAYERLIGHTGUNS];
+    quint8                  playersAssignment[MAXPLAYERLIGHTGUNS]; // Saved legacy assignments.
+    qint16                  playersIndex[MAXPLAYERLIGHTGUNS];      // Current combo-box selections.
 
 };
 

@@ -1,6 +1,7 @@
 #include "addLightGunWindowV2.h"
 #include "Windows/ui_addLightGunWindowV2.h"
 #include "../Global.h"
+#include <QIntValidator>
 #ifndef Q_OS_WIN
 #include <QDir>
 #include <QFileInfo>
@@ -12,6 +13,8 @@ addLightGunWindowV2::addLightGunWindowV2(ComDeviceList *cdList, QWidget *parent)
     , ui(new Ui::addLightGunWindowV2)
 {
     ui->setupUi(this);
+    ui->recoilIntervalLineEdit->setValidator(new QIntValidator(0, DIRECTRECOILINTERVALMAX, ui->recoilIntervalLineEdit));
+    ui->recoilIntervalLineEdit->setText("0");
 
     QString tempQS;
 
@@ -1241,6 +1244,10 @@ void addLightGunWindowV2::AddLightGun()
         p_comDeviceList->AddLightGun(defaultLightGun, defaultLightGunNum, lightGunName, lightGunNum, comPortNum, comPortName, *p_comPortInfo, comPortBaud, comPortDataBits, comPortParity, comPortStopBits, comPortFlow, recoilOptions, lgSet);
     }
 
+    if(p_comDeviceList->GetNumberLightGuns() > 0)
+        p_comDeviceList->p_lightGunList[p_comDeviceList->GetNumberLightGuns() - 1]
+            ->SetDirectRecoilInterval(ui->recoilIntervalLineEdit->text().toUShort());
+
     addLightGunSound.play();
     numberLightGuns = p_comDeviceList->GetNumberLightGuns ();
     ui->lgLCDNumber->display (numberLightGuns);
@@ -1549,6 +1556,10 @@ bool addLightGunWindowV2::CheckRecoilComboBoxes()
 
 void addLightGunWindowV2::ChangeLabels(int index)
 {
+    ui->recoilIntervalLineEdit->setText(index == RS3_REAPER
+                                            ? QString::number(REAPERDIRECTRECOILINTERVAL)
+                                            : QStringLiteral("0"));
+
     //Always Red, Name and Recoil Method
     ui->nameLabel->setStyleSheet("QLabel { color: red; }");
     ui->recoilLabel->setStyleSheet("QLabel { color: red; }");
@@ -1981,4 +1992,3 @@ void addLightGunWindowV2::on_openFireNoDisplayCheckBox_checkStateChanged(const Q
         ui->openFireNumberRadioButton->setStyleSheet("QRadioButton { color: red; }");
     }
 }
-

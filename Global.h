@@ -86,6 +86,8 @@ extern QString DEFAULTLGFILENAMES_ARRAY[];
 #define REAPERRELOAD            "6"
 #define REAPERMAXAMMONUM        5
 #define REAPERRELOADNUM         6
+#define REAPERDIRECTRECOILINTERVAL 100
+#define DIRECTRECOILINTERVALMAX    65535
 
 #define DISABLEREAPERLEDSOPEN   "ZS"
 #define REAPERAUTOLED           "ZR"
@@ -371,6 +373,7 @@ extern QString DEFAULTLGFILENAMES_ARRAY[];
 #define COMDEVICESAVEFILE       "comdevices.hor"
 #define STARTLIGHTGUNSAVEFILEV2 "Light Gun Data File V2"
 #define STARTLIGHTGUNSAVEFILEV3 "Light Gun Data File V3"
+#define STARTLIGHTGUNSAVEFILEV4 "Light Gun Data File V4"
 #define PLAYERSASSIGNMENTS      "Player Assignments"
 #define STARTCOMDEVICESAVEFILE  "COM Device Data File"
 #define LIGHTGUNNUMBERFILE      "Light Gun #"
@@ -556,6 +559,7 @@ extern QString DEFAULTLGFILENAMES_ARRAY[];
 #define SINDENTRIGGERRECOILMAX  3
 #define AMMOCHECKOPTION         "Ammo_Check"
 #define SKIPAUTOLEDOPTION       "Skip_Auto_LED"
+#define RS3AMMOLEDMAPOPTION     "RS3_Ammo_LED_Map"
 #define OVERRIDEFADE            "Override_Fade"
 #define OVERRIDEFADELENGTH      2
 
@@ -1045,20 +1049,26 @@ extern quint8 ULTIMARCTYPEBRIGHTNESS[];
 /// Structs
 ////////////////////////
 
-//Struct that Stores the Default Light gun Data
+// Default values used when a built-in .hor profile is first created.
+// The field names are legacy, but their meanings are:
+//   - BAUD/DATA/PARITY/STOP/FLOW: indexes into the serial-port option arrays.
+//   - MAXAMMO/RELOADVALUE: command/value strings sent to the gun.
+//   - MAXAMMON/RELOADVALUEN: numeric ammo/reload values used by game logic.
 struct S_DEFAULTLG
 {
-    quint8  BAUD;
-    quint8  DATA;
-    quint8  PARITY;
-    quint8  STOP;
-    quint8  FLOW;
-    QString MAXAMMO;
-    QString RELOADVALUE;
-    quint16 MAXAMMON;
-    quint16 RELOADVALUEN;
+    quint8  BAUD;          // Index of the default baud-rate option.
+    quint8  DATA;          // Index of the default data-bits option.
+    quint8  PARITY;        // Index of the default parity option.
+    quint8  STOP;          // Index of the default stop-bits option.
+    quint8  FLOW;          // Index of the default flow-control option.
+    QString MAXAMMO;       // Command/value string for maximum ammo.
+    QString RELOADVALUE;   // Command/value string for reload.
+    quint16 MAXAMMON;      // Numeric maximum ammo value.
+    quint16 RELOADVALUEN;  // Numeric reload value.
 };
 
+// Shared built-in profile defaults. Initialized before ComDeviceList creates
+// LightGun objects in both GUI and headless service modes.
 extern S_DEFAULTLG DEFAULTLG_ARRAY[];
 
 struct INIPortStruct

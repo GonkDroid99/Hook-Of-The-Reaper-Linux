@@ -1,4 +1,166 @@
 #include "ComDeviceList.h"
+#include "../HardwareManager/HardwareManager.h"
+
+namespace
+{
+// Convert the hardware manager's normalized device type into the legacy
+// profile number used by LightGun and the existing .hor files. Returning
+// UNASSIGN means the manager discovered hardware HOTR cannot configure yet.
+int defaultLightGunTypeForHardware(const QString &deviceType)
+{
+    if(deviceType == "rs3reaper") return RS3_REAPER;
+    if(deviceType == "gun4ir") return JBGUN4IR;
+    if(deviceType == "fusion") return FUSION;
+    if(deviceType == "blamcon") return BLAMCON;
+    if(deviceType == "openfire") return OPENFIRE;
+    if(deviceType == "xgunner") return XGUNNER;
+    if(deviceType == "xenas") return XENAS;
+    if(deviceType == "alienusb") return ALIENUSB;
+    if(deviceType == "aimtrak") return AIMTRAK;
+    if(deviceType == "custom") return CUSTOMUSB;
+    return UNASSIGN;
+}
+
+QString defaultLightGunName(int defaultLightGunType,
+                            const DeviceFingerprint &fingerprint)
+{
+    // Built-in types use their established names. Unknown/custom devices use
+    // the USB product string so the generated profile is understandable.
+    switch(defaultLightGunType)
+    {
+    case RS3_REAPER: return REAPERNAME;
+    case JBGUN4IR: return JBGUN4IRNAME;
+    case FUSION: return FUSIONNAME;
+    case BLAMCON: return BLAMCONNAME;
+    case OPENFIRE: return OPENFIRENAME;
+    case XGUNNER: return XGUNNERNAME;
+    case XENAS: return XENASNAME;
+    case ALIENUSB: return ALIENUSBNAME;
+    case AIMTRAK: return AIMTRAKNAME;
+    case CUSTOMUSB: return CUSTOMUSBNAME;
+    default:
+        return fingerprint.product.isEmpty() ? QStringLiteral("Detected light gun")
+                                              : fingerprint.product;
+    }
+}
+
+SupportedRecoils automaticRecoilPriority(int defaultLightGunType)
+{
+    // SupportedRecoils stores command priority, not a yes/no capability list.
+    // The gun-specific order determines whether ammo or recoil is preferred.
+    SupportedRecoils result{};
+    if(defaultLightGunType == RS3_REAPER || defaultLightGunType == SINDEN)
+    {
+        result.recoil = 1;
+        result.ammoValue = 0;
+        result.recoilR2S = 2;
+        result.recoilValue = 0;
+    }
+    else
+    {
+        result.recoil = 0;
+        result.ammoValue = 1;
+        result.recoilR2S = 2;
+        result.recoilValue = 0;
+    }
+    return result;
+}
+
+LightGunSettings automaticLightGunSettings(int defaultLightGunType)
+{
+    // These flags decide which optional game-event commands are loaded for a
+    // newly created profile. Existing user-edited profiles are left untouched.
+    LightGunSettings result{};
+    result.reload = (defaultLightGunType == RS3_REAPER || defaultLightGunType == XGUNNER) ? 1 : 0;
+    result.damage = (defaultLightGunType == RS3_REAPER || defaultLightGunType == XGUNNER) ? 1 : 0;
+    result.death = (defaultLightGunType == RS3_REAPER || defaultLightGunType == XGUNNER) ? 1 : 0;
+    result.shake = defaultLightGunType == RS3_REAPER || defaultLightGunType == XGUNNER;
+    return result;
+}
+
+quint32 defaultBaudRate(int defaultLightGunType)
+{
+    // These devices use 9600 baud; the other supported serial profiles use
+    // the standard 115200 baud default.
+    return defaultLightGunType == JBGUN4IR || defaultLightGunType == BLAMCON ||
+           defaultLightGunType == OPENFIRE || defaultLightGunType == XGUNNER
+        ? 9600 : 115200;
+}
+
+HIDInfo hidInfoFromFingerprint(const DeviceFingerprint &fingerprint)
+{
+    // HardwareManager stores normalized strings; LightGun expects the legacy
+    // HIDInfo structure used by the original configuration UI.
+    HIDInfo info{};
+    bool vendorOK = false;
+    bool productOK = false;
+    info.path = fingerprint.path;
+    info.displayPath = fingerprint.path;
+    info.vendorID = fingerprint.vid.toUShort(&vendorOK, 16);
+    info.productID = fingerprint.pid.toUShort(&productOK, 16);
+    info.vendorIDString = fingerprint.vid;
+    info.productIDString = fingerprint.pid;
+    info.serialNumber = fingerprint.serialNumber;
+    info.manufacturer = fingerprint.manufacturer;
+    info.productDiscription = fingerprint.product;
+    info.interfaceNumber = static_cast<qint8>(fingerprint.interfaceNumber);
+    if(!vendorOK) info.vendorID = 0;
+    if(!productOK) info.productID = 0;
+    return info;
+}
+
+bool sameDefaultAndTransport(const LightGun *gun, int defaultLightGunType,
+                             bool usesHidTransport)
+{
+    // A legacy profile is reusable only when both its profile type and output
+    // transport match the manager device. This prevents serial/HID duplicates.
+    return gun != nullptr && gun->GetDefaultLightGun() &&
+           gun->GetDefaultLightGunNumber() == defaultLightGunType &&
+           ((gun->GetOutputConnection() == USBHID) == usesHidTransport);
+}
+
+bool sameUsbPart(const QString &left, const QString &right)
+{
+    // Compare optional USB/path fields only when both sides contain data.
+    // Empty strings must not accidentally count as a match.
+    return !left.isEmpty() && !right.isEmpty() &&
+           left.compare(right, Qt::CaseInsensitive) == 0;
+}
+
+bool legacyGunMatchesFingerprint(LightGun *gun, const DeviceFingerprint &fingerprint)
+{
+    // Match an existing legacy profile using the strongest available endpoint
+    // information. The caller has already checked profile and transport.
+    if(!gun)
+        return false;
+
+    if(fingerprint.transport == "serial" && gun->GetOutputConnection() != USBHID)
+    {
+        const QSerialPortInfo info = gun->GetComPortInfo();
+        const bool sameSerial = !fingerprint.serialNumber.isEmpty() &&
+            info.serialNumber() == fingerprint.serialNumber;
+        const bool sameUsb = info.hasVendorIdentifier() && info.hasProductIdentifier() &&
+            sameUsbPart(QString::number(info.vendorIdentifier(), 16), fingerprint.vid) &&
+            sameUsbPart(QString::number(info.productIdentifier(), 16), fingerprint.pid);
+        const bool samePath = sameUsbPart(gun->GetComPortString(), fingerprint.stableByIdPath) ||
+                              sameUsbPart(gun->GetComPortPath(), fingerprint.path);
+        return (sameSerial && sameUsb) || samePath;
+    }
+
+    if(fingerprint.transport == "hid" && gun->GetOutputConnection() == USBHID)
+    {
+        const HIDInfo info = gun->GetUSBHIDInfo();
+        const bool sameSerial = !fingerprint.serialNumber.isEmpty() &&
+            info.serialNumber == fingerprint.serialNumber;
+        const bool sameUsb = sameUsbPart(QString::number(info.vendorID, 16), fingerprint.vid) &&
+                             sameUsbPart(QString::number(info.productID, 16), fingerprint.pid);
+        const bool samePath = sameUsbPart(info.path, fingerprint.path) ||
+                              sameUsbPart(info.displayPath, fingerprint.path);
+        return (sameSerial && sameUsb) || (sameUsb && samePath);
+    }
+    return false;
+}
+}
 
 //Constructor
 ComDeviceList::ComDeviceList(QObject *parent)
@@ -57,19 +219,27 @@ ComDeviceList::ComDeviceList(QObject *parent)
     //currentPath = QDir::currentPath();
 #ifndef Q_OS_WIN
     {
-        // When running from an AppImage, $APPIMAGE is the path to the .AppImage file.
-        // Prefer its containing directory so data/ lives next to the AppImage.
-        // Fall back to ~/.HookOfTheReaper if that directory isn't writable
-        // (e.g. read-only media, or AppImage run from a system path).
-        QByteArray appImageEnv = qgetenv("APPIMAGE");
-        if (!appImageEnv.isEmpty())
-            currentPath = QFileInfo(QString::fromUtf8(appImageEnv)).absolutePath();
-        else
-            currentPath = QApplication::applicationDirPath();
+        // Batocera/service override.
+        QByteArray hotrDataEnv = qgetenv("HOTR_DATA_DIR");
 
-        // Fall back to home dir if the primary path isn't writable
-        if (!QFileInfo(currentPath).isWritable())
-            currentPath = QDir::homePath() + "/.HookOfTheReaper";
+        if (!hotrDataEnv.isEmpty())
+        {
+            // HOTR_DATA_DIR points directly to the data/ directory.
+            // currentPath is the directory containing data/.
+            currentPath = QFileInfo(QString::fromUtf8(hotrDataEnv)).absolutePath();
+        }
+        else
+        {
+            QByteArray appImageEnv = qgetenv("APPIMAGE");
+
+            if (!appImageEnv.isEmpty())
+                currentPath = QFileInfo(QString::fromUtf8(appImageEnv)).absolutePath();
+            else
+                currentPath = QApplication::applicationDirPath();
+
+            if (!QFileInfo(currentPath).isWritable())
+                currentPath = QDir::homePath() + "/.HookOfTheReaper";
+        }
     }
 #else
     currentPath = QApplication::applicationDirPath();
@@ -892,7 +1062,7 @@ void ComDeviceList::DeassignPlayerLightGun(quint8 playerNum)
     playersLightGun[playerNum] = UNASSIGN;
 }
 
-quint8 ComDeviceList::GetPlayerLightGunAssignment(quint8 playerNum)
+quint8 ComDeviceList::GetPlayerLightGunAssignment(quint8 playerNum) const
 {
     if(playerNum < MAXPLAYERLIGHTGUNS)
     {
@@ -954,7 +1124,7 @@ void ComDeviceList::SaveLightGunList()
     //Create a Text Stream, to Stream in the Data Easier
     QTextStream out(&saveLGData);
 
-    out << STARTLIGHTGUNSAVEFILEV3 << "\n";
+    out << STARTLIGHTGUNSAVEFILEV4 << "\n";
     out << numberLightGuns << "\n";
 
 
@@ -998,6 +1168,8 @@ void ComDeviceList::SaveLightGunList()
             out << "1\n";
         else
              out << "0\n";
+
+        out << p_lightGunList[i]->GetDirectRecoilInterval() << "\n";
 
         out << ENDGENERALSETTINGS << "\n";
 
@@ -1241,7 +1413,9 @@ void ComDeviceList::LoadLightGunList()
     loadLGData.close();
 
     if(line == STARTLIGHTGUNSAVEFILEV3)
-        LoadLightGunListV3();
+        LoadLightGunListV3(false);
+    else if(line == STARTLIGHTGUNSAVEFILEV4)
+        LoadLightGunListV3(true);
     //else if(line == STARTLIGHTGUNSAVEFILEV2)
     //{
     //    LoadLightGunListV2();
@@ -1255,9 +1429,321 @@ void ComDeviceList::LoadLightGunList()
     }
 }
 
+void ComDeviceList::ReloadLightGunList()
+{
+    // LoadLightGunList appends entries, so clear the existing objects first.
+    // Delete from the end to preserve indices while DeleteLightGun updates
+    // COM-port availability, assignments and TCP player bookkeeping.
+    while(numberLightGuns > 0)
+        DeleteLightGun(numberLightGuns - 1);
+
+    LoadLightGunList();
+}
+
+bool ComDeviceList::RefreshSerialDevicePath(const DeviceFingerprint &fingerprint, quint8 player)
+{
+    // Replugging can change /dev/ttyUSBx. Update the existing LightGun object
+    // so the game layer keeps using the same configured profile.
+    if(fingerprint.transport != "serial")
+        return false;
+
+    // The assigned profile is the fallback when the old port no longer exists
+    // and QSerialPortInfo cannot report its previous VID/PID/serial metadata.
+    LightGun *playerGun = nullptr;
+    if(player >= 1 && player <= MAXPLAYERLIGHTGUNS)
+    {
+        const quint8 assigned = GetPlayerLightGunAssignment(player - 1);
+        if(assigned != UNASSIGN && assigned < numberLightGuns)
+            playerGun = p_lightGunList[assigned];
+    }
+
+    for(quint8 i = 0; i < numberLightGuns; ++i)
+    {
+        LightGun *gun = p_lightGunList[i];
+        if(gun == nullptr || gun->GetOutputConnection() == USBHID)
+            continue;
+
+        const QSerialPortInfo info = gun->GetComPortInfo();
+        const bool sameSerial = !fingerprint.serialNumber.isEmpty() &&
+            info.serialNumber() == fingerprint.serialNumber;
+        const bool sameUsbIdentity = info.hasVendorIdentifier() && info.hasProductIdentifier() &&
+            QString::number(info.vendorIdentifier(), 16).compare(fingerprint.vid, Qt::CaseInsensitive) == 0 &&
+            QString::number(info.productIdentifier(), 16).compare(fingerprint.pid, Qt::CaseInsensitive) == 0;
+
+        // On a cold start the saved tty name may no longer exist, so its
+        // QSerialPortInfo contains no VID/PID/serial metadata. In that case
+        // use HardwareManager's persistent player assignment as the bridge
+        // to the legacy gun profile.
+        if((sameSerial && sameUsbIdentity) || gun == playerGun)
+        {
+            qInfo() << "[HOTR] Updating serial path for" << gun->GetLightGunName()
+                    << "to" << fingerprint.path << "player=" << player;
+            gun->UpdateSerialPortPath(fingerprint.path, fingerprint.stableByIdPath);
+            return true;
+        }
+    }
+    return false;
+}
+
+int ComDeviceList::FindLightGunForHardwareDevice(const HardwareDevice &device) const
+{
+    // Find the legacy profile corresponding to one manager record. This is
+    // used by the assignment UI to map old profile indexes back to identities.
+    const int defaultLightGunType = defaultLightGunTypeForHardware(device.deviceType);
+    if(defaultLightGunType == UNASSIGN)
+        return -1;
+
+    const DeviceFingerprint *serialFingerprint = nullptr;
+    const DeviceFingerprint *hidFingerprint = nullptr;
+    if(device.fingerprint.transport == "serial") serialFingerprint = &device.fingerprint;
+    if(device.fingerprint.transport == "hid") hidFingerprint = &device.fingerprint;
+    for(const DeviceFingerprint &endpoint : device.endpoints)
+    {
+        if(endpoint.transport == "serial" && serialFingerprint == nullptr)
+            serialFingerprint = &endpoint;
+        if(endpoint.transport == "hid" && hidFingerprint == nullptr)
+            hidFingerprint = &endpoint;
+    }
+    // Serial is preferred when a gun exposes both a serial and HID endpoint;
+    // the serial identity is the stable bridge to the saved gun profile.
+    const DeviceFingerprint *selectedFingerprint = serialFingerprint != nullptr
+        ? serialFingerprint : hidFingerprint;
+    if(selectedFingerprint == nullptr)
+        return -1;
+    const bool usesHidTransport = selectedFingerprint->transport == "hid";
+
+    // The manager player assignment is the strongest bridge to the legacy
+    // list because it remains valid when a tty path changes after replug.
+    if(device.player >= 1 && device.player <= MAXPLAYERLIGHTGUNS)
+    {
+        const quint8 assigned = GetPlayerLightGunAssignment(device.player - 1);
+        if(assigned != UNASSIGN && assigned < numberLightGuns &&
+           sameDefaultAndTransport(p_lightGunList[assigned], defaultLightGunType,
+                                   usesHidTransport))
+            return assigned;
+    }
+
+    for(quint8 i = 0; i < numberLightGuns; ++i)
+    {
+        if(!sameDefaultAndTransport(p_lightGunList[i], defaultLightGunType,
+                                    usesHidTransport))
+            continue;
+        if(legacyGunMatchesFingerprint(p_lightGunList[i], *selectedFingerprint))
+            return i;
+    }
+    return -1;
+}
+
+bool ComDeviceList::AutoConfigureHardwareDevice(const HardwareDevice &device, bool allowCreate)
+{
+    // Apply one present manager device to the legacy files:
+    //   - reuse the assigned/matching LightGun when possible;
+    //   - create a built-in profile when safe and necessary;
+    //   - refresh the current serial/HID path;
+    //   - persist the legacy profile and player assignment.
+    if(!device.present || device.player == 0 || device.player > MAXPLAYERLIGHTGUNS)
+        return false;
+
+    const int defaultLightGunType = defaultLightGunTypeForHardware(device.deviceType);
+    if(defaultLightGunType == UNASSIGN)
+        return false;
+
+    // A physical gun may expose both endpoints. Serial is preferred because
+    // it is the RS3 output transport; HID-only devices use the HID endpoint.
+    const DeviceFingerprint *serialFingerprint = nullptr;
+    const DeviceFingerprint *hidFingerprint = nullptr;
+    if(device.fingerprint.transport == "serial")
+        serialFingerprint = &device.fingerprint;
+    else if(device.fingerprint.transport == "hid")
+        hidFingerprint = &device.fingerprint;
+    for(const DeviceFingerprint &endpoint : device.endpoints)
+    {
+        if(endpoint.transport == "serial" && serialFingerprint == nullptr)
+            serialFingerprint = &endpoint;
+        if(endpoint.transport == "hid" && hidFingerprint == nullptr)
+            hidFingerprint = &endpoint;
+    }
+
+    // Prefer serial when both endpoints are present. A HID-only gun uses the
+    // HID endpoint; this prevents one physical gun becoming two profiles.
+    const bool usesHidTransport = serialFingerprint == nullptr && hidFingerprint != nullptr;
+    if(!usesHidTransport && serialFingerprint == nullptr)
+        return false;
+
+    // -1 means no reusable legacy profile has been found yet.
+    int matchedLightGunIndex = -1;
+    const quint8 playerIndex = device.player - 1;
+    const quint8 assigned = GetPlayerLightGunAssignment(playerIndex);
+    if(assigned != UNASSIGN && assigned < numberLightGuns &&
+       sameDefaultAndTransport(p_lightGunList[assigned], defaultLightGunType,
+                               usesHidTransport))
+    {
+        matchedLightGunIndex = assigned;
+    }
+
+    // Prefer an already configured profile for this hardware type before
+    // creating another legacy entry. This keeps the generated lightguns.hor
+    // stable when the manager is rescanned.
+    if(matchedLightGunIndex < 0)
+    {
+        for(quint8 i = 0; i < numberLightGuns; ++i)
+        {
+            if(!sameDefaultAndTransport(p_lightGunList[i], defaultLightGunType,
+                                        usesHidTransport))
+                continue;
+
+            bool usedByAnotherPlayer = false;
+            for(quint8 p = 0; p < MAXPLAYERLIGHTGUNS; ++p)
+            {
+                if(p != playerIndex && GetPlayerLightGunAssignment(p) == i)
+                {
+                    usedByAnotherPlayer = true;
+                    break;
+                }
+            }
+            if(!usedByAnotherPlayer)
+            {
+                matchedLightGunIndex = i;
+                break;
+            }
+        }
+    }
+
+    if(matchedLightGunIndex < 0 && !allowCreate)
+    {
+        qInfo() << "[HOTR] Deferring automatic legacy profile creation while a game is active"
+                << "device=" << device.identity.key() << "player=" << device.player;
+        return false;
+    }
+
+    // Save only when something changed, avoiding unnecessary writes on each
+    // three-second safety scan.
+    bool changed = false;
+    if(matchedLightGunIndex < 0)
+    {
+        if(numberLightGuns >= MAXCOMPORTS)
+        {
+            qWarning() << "[HOTR] Cannot create automatic gun profile: profile limit reached";
+            return false;
+        }
+
+        const DeviceFingerprint &fingerprint = usesHidTransport
+            ? *hidFingerprint : *serialFingerprint;
+        const QString name = defaultLightGunName(defaultLightGunType, fingerprint) +
+                             " P" + QString::number(device.player);
+        const quint8 lightGunNumber = numberLightGuns;
+        const SupportedRecoils recoil = automaticRecoilPriority(defaultLightGunType);
+        const LightGunSettings settings = automaticLightGunSettings(defaultLightGunType);
+
+        if(usesHidTransport)
+        {
+            const HIDInfo hidInfo = hidInfoFromFingerprint(fingerprint);
+            if(defaultLightGunType == ALIENUSB)
+            {
+                AddLightGun(true, ALIENUSB, name, lightGunNumber, hidInfo,
+                            recoil, false, DisplayPriority{});
+            }
+            else if(defaultLightGunType == AIMTRAK)
+            {
+                AddLightGun(true, AIMTRAK, name, lightGunNumber, hidInfo,
+                            AIMTRAKDELAYDFLT, recoil);
+            }
+            else
+            {
+                AddLightGun(true, CUSTOMUSB, name, lightGunNumber, hidInfo,
+                            recoil, settings, false, DisplayPriority{});
+            }
+        }
+        else
+        {
+            // LightGun still expects an internal COM slot number. This is not
+            // the Linux tty number; it is HOTR's available-port bookkeeping.
+            const quint8 portNumber = [&]() {
+                for(quint8 port = 0; port < MAXCOMPORTS; ++port)
+                    if(availableComPorts[port]) return port;
+                return static_cast<quint8>(UNASSIGN);
+            }();
+            if(portNumber == UNASSIGN)
+            {
+                qWarning() << "[HOTR] Cannot create automatic gun profile: no COM slot available";
+                return false;
+            }
+
+            // Store the stable symlink when available, but pass the current
+            // path to QSerialPortInfo so the port can be opened immediately.
+            const QString path = fingerprint.stableByIdPath.isEmpty()
+                ? fingerprint.path : fingerprint.stableByIdPath;
+            const QSerialPortInfo portInfo(fingerprint.path);
+            const QString profileName = name;
+            if(defaultLightGunType == RS3_REAPER)
+            {
+                ReaperSlideData slide{};
+                slide.disableHoldBack = false;
+                slide.enableHoldDelay = false;
+                slide.holdDelay = DEFAULTAMMO0DELAY;
+                slide.slideHoldTime = REAPERHOLDSLIDETIME;
+                AddLightGun(true, RS3_REAPER, profileName, lightGunNumber,
+                            portNumber, path, portInfo, defaultBaudRate(defaultLightGunType),
+                            8, 0, 1, 0, recoil, settings, false,
+                            LARGEAMMOVALUEDEFAULT, slide);
+            }
+            else if(defaultLightGunType == OPENFIRE)
+            {
+                AddLightGun(true, OPENFIRE, profileName, lightGunNumber,
+                            portNumber, path, portInfo, defaultBaudRate(defaultLightGunType),
+                            8, 0, 1, 0, recoil, settings, false,
+                            DisplayPriority{}, DisplayOpenFire{});
+            }
+            else
+            {
+                AddLightGun(true, static_cast<quint8>(defaultLightGunType), profileName,
+                            lightGunNumber, portNumber, path, portInfo,
+                            defaultBaudRate(defaultLightGunType), 8, 0, 1, 0,
+                            recoil, settings);
+            }
+        }
+        matchedLightGunIndex = numberLightGuns - 1;
+        changed = true;
+        qInfo() << "[HOTR] Created automatic legacy gun profile"
+                << p_lightGunList[matchedLightGunIndex]->GetLightGunName()
+                << "player=" << device.player;
+    }
+
+    LightGun *gun = p_lightGunList[matchedLightGunIndex];
+    if(usesHidTransport)
+    {
+        const HIDInfo info = hidInfoFromFingerprint(*hidFingerprint);
+        if(!(gun->GetUSBHIDInfo() == info))
+        {
+            gun->SetHIDInfo(info);
+            changed = true;
+        }
+    }
+    else if(gun->GetComPortPath() != serialFingerprint->path ||
+            (!serialFingerprint->stableByIdPath.isEmpty() &&
+             gun->GetComPortString() != serialFingerprint->stableByIdPath))
+    {
+        gun->UpdateSerialPortPath(serialFingerprint->path,
+                                  serialFingerprint->stableByIdPath);
+        changed = true;
+    }
+
+    if(assigned != matchedLightGunIndex)
+    {
+        if(!AssignPlayerLightGun(playerIndex,
+                                 static_cast<quint8>(matchedLightGunIndex)))
+            return changed;
+        changed = true;
+    }
+
+    if(changed)
+        SaveLightGunList();
+    return changed;
+}
 
 
-void ComDeviceList::LoadLightGunListV3()
+
+void ComDeviceList::LoadLightGunListV3(bool hasDirectRecoilInterval)
 {
     bool openFile;
     quint8 i;
@@ -1311,7 +1797,8 @@ void ComDeviceList::LoadLightGunListV3()
     line = in.readLine();
 
 
-    if(line != STARTLIGHTGUNSAVEFILEV3)
+    if((!hasDirectRecoilInterval && line != STARTLIGHTGUNSAVEFILEV3) ||
+       (hasDirectRecoilInterval && line != STARTLIGHTGUNSAVEFILEV4))
     {
         //qDebug() << line;
         ShowError("File Error", "Light gun save data file is corrupted. Please try to reload file, or re-enter the light guns again.");
@@ -1392,6 +1879,16 @@ void ComDeviceList::LoadLightGunListV3()
             lgSet.shake = false;
         else
             lgSet.shake = true;
+
+        quint16 directRecoilInterval = 0;
+        if(hasDirectRecoilInterval)
+        {
+            line = in.readLine();
+            bool intervalIsNumber = false;
+            const uint parsedInterval = line.toUInt(&intervalIsNumber);
+            if(intervalIsNumber)
+                directRecoilInterval = static_cast<quint16>(qMin(parsedInterval, 65535u));
+        }
 
 
         //Enad General Light Gun Settings
@@ -1697,6 +2194,9 @@ void ComDeviceList::LoadLightGunListV3()
 
             AddLightGun(tempIsDefaultGun, tempDefaultGunNum, tempLightGunName, tenpLightGunNum, tempTCPPort, tempTCPPlayer, tempRecVolt, recoilPriority, lgSet);
         }
+
+        if(numberLightGuns > 0)
+            p_lightGunList[numberLightGuns - 1]->SetDirectRecoilInterval(directRecoilInterval);
     }
 
     //Next up is the players light gun assignments

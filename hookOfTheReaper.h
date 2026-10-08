@@ -34,6 +34,7 @@
 
 //Hooker Engine
 #include "HookerEngine/HookerEngine.h"
+#include "HardwareManager/HardwareManager.h"
 
 //Windows Include File
 #ifdef Q_OS_WIN
@@ -184,6 +185,7 @@ private:
 
     //Hooker Engine Pointer
     HookerEngine                    *p_hookEngine;
+    HardwareManager                 *p_hardwareManager;
 
     //Main Window & Window Stuff
     Ui::HookOfTheReaper             *ui;

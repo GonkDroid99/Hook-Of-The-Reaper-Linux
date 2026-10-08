@@ -36,3 +36,7 @@ CLAUDE.md
 AppDir/
 build/
 build-release/
+build_appimage/*
+data/lightguns.hor
+data/playersAss.hor
+HOTR Linux.zip
